@@ -447,11 +447,13 @@ function submit(auto, timedOut){
     <div class="score ${score>=PASS_MARK?'pass':'fail'}">${score}%</div>
     <p><strong class="${score>=PASS_MARK?'pass':'fail'}">${score>=PASS_MARK?"LULUS 🎉":"BELUM LULUS"}</strong> — benar ${correct} dari ${QS.length} (syarat ${PASS_MARK}%)</p>
     <h3 style="text-align:left">Bedah per topik</h3><table class="case">`;
+  let anyWeak=false;
   Object.entries(byTopic).forEach(([t,v])=>{
     const p=Math.round(v.c/v.n*100);
+    if(p<70) anyWeak=true;
     h+=`<tr><td>${t}</td><td>${v.c}/${v.n}</td><td>${p}% ${p<70?"⚠️":""}</td></tr>`;
   });
-  h += `</table><p class="small">Fokuskan belajar berikutnya ke topik bertanda ⚠️.</p>
+  h += `</table>${anyWeak?'<p class="small">Fokuskan belajar berikutnya ke topik bertanda ⚠️.</p>':''}
     <button class="btn" onclick="review()">Lihat Pembahasan</button>
     <button class="btn acc" onclick="startExam()">Ulangi (soal diacak)</button></div>`;
   app.innerHTML=h; window.scrollTo(0,0);
