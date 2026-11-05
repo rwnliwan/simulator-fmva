@@ -254,7 +254,7 @@ function caseBrief(){
     <p><a class="btn" href="https://drive.google.com/uc?export=download&id=${CASE_FILE_ID}" target="_blank" rel="noopener">⬇ Unduh Workbook (xlsx)</a></p>
     <div class="card" style="box-shadow:none;margin:12px 0">
       <h3>🔍 Verifikasi modelmu (opsional)</h3>
-      <p class="small">Upload file MODEL yang sudah kamu isi — checker membaca 12 sel kunci (bukan menilai rumus).</p>
+      <p class="small">Upload file MODEL yang sudah kamu isi — checker memverifikasi nilai dan rumus 12 sel kunci.</p>
       <input type="file" id="casefile" accept=".xlsx,.xlsm" style="margin:8px 0">
       <button class="btn" onclick="checkCaseFile()">Periksa Workbook</button>
       <div id="casecheck" class="small" style="margin-top:8px"></div>
@@ -296,12 +296,29 @@ function checkCaseFile(){
         const wb = XLSX.read(e.target.result, {type:'array'});
         const ws = wb.Sheets['MODEL'];
         if(!ws){ out.innerHTML = "⚠️ Sheet <b>MODEL</b> tidak ditemukan."; return; }
-        const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+        // Baca nilai langsung dari objek sel (bukan sheet_to_json): sheet_to_json
+        // melempar "unrecognized type shared" untuk file Excel berisi shared formula
+        // (drag-fill) — dan objek selnya juga dibutuhkan untuk cek rumus (.f).
+        const ref = XLSX.utils.decode_range(ws['!ref']);
+        const rows = [];
+        for(let r=ref.s.r; r<=ref.e.r; r++){
+          const row = [];
+          for(let c=ref.s.c; c<=ref.e.c; c++){
+            const cell = ws[XLSX.utils.encode_cell({r:r, c:c})];
+            row.push(cell ? cell.v : null);
+          }
+          rows.push(row);
+        }
         const lab = {};
         rows.forEach((r,i)=>{ if(typeof r[0]==='string' && !(r[0].trim() in lab)) lab[r[0].trim()] = i; });
         const num = v => (typeof v==='number') ? v : (typeof v==='string' ? parseFloat(v.replace(/[^0-9.\-]/g,'')) : NaN);
         const TOL = 0.011 * 1000; // toleransi Rp11 jt untuk output biasa (angka dalam Rp juta)
         const TOL_BAL = 1; // SIM-3 fix: toleransi KETAT untuk balance-check (harus ≈0): Rp1 juta. Terpisah dari TOL output.
+        // Sel kunci WAJIB rumus (bukan ketikan): baca objek sel langsung — sheet_to_json
+        // membuang info rumus. .f = rumus per-sel; t:"shared" = anggota shared formula
+        // Excel (drag-fill) — SheetJS 0.18.5 tidak mengembangkan shared formula ke .f.
+        const cellAt = (ri, ci) => (ri===undefined || ci===undefined) ? undefined : ws[XLSX.utils.encode_cell({r:ri, c:ci})];
+        const hasFormula = cell => !!(cell && ((typeof cell.f === 'string' && cell.f !== '') || cell.t === 'shared'));
         const checks = [
           ["Pendapatan 2026", lab["Pendapatan"], 1, 151800],
           ["EBIT 2026", lab["EBIT"], 1, 22860],
@@ -316,22 +333,32 @@ function checkCaseFile(){
         ];
         // sel nilai tunggal (TV/EV/ekuitas/saham): cari di kolom B–D baris label
         const single = (label)=>{
-          const i = lab[label]; if(i===undefined) return NaN;
-          for(const c of [1,2,3]){ const v = num(rows[i][c]); if(!isNaN(v)) return v; }
-          return NaN;
+          const i = lab[label]; if(i===undefined) return {v:NaN, cell:undefined};
+          for(const c of [1,2,3]){ const v = num(rows[i][c]); if(!isNaN(v)) return {v, cell:cellAt(i,c)}; }
+          return {v:NaN, cell:undefined};
         };
-        checks.push(["Enterprise value (DCF)", null, null, 192388.65, single("Enterprise value (DCF)")]);
-        checks.push(["Nilai per saham", null, null, 3547.77, single("Nilai per saham")]);
-        let ok = 0, h = "<table class='case'>";
+        const ev = single("Enterprise value (DCF)");
+        const pps = single("Nilai per saham");
+        checks.push(["Enterprise value (DCF)", null, null, 192388.65, ev.v, ev.cell]);
+        checks.push(["Nilai per saham", null, null, 3547.77, pps.v, pps.cell]);
+        let ok = 0, h = "<table class='case'><tr><th>Sel kunci</th><th>Nilai (Rp juta)</th><th></th><th>Keterangan</th></tr>";
         checks.forEach(c=>{
-          const [name, ri, ci, exp, pre] = c;
+          const [name, ri, ci, exp, pre, preCell] = c;
           const got = (pre!==undefined) ? pre : (ri===undefined ? NaN : num(rows[ri][ci]));
+          const cell = (preCell!==undefined) ? preCell : cellAt(ri, ci);
           const tol = (exp===0) ? TOL_BAL : Math.max(TOL, Math.abs(exp)*0.0005);
-          const pass = !isNaN(got) && Math.abs(got-exp) <= tol;
+          const valOk = !isNaN(got) && Math.abs(got-exp) <= tol;
+          const formulaOk = hasFormula(cell);
+          const pass = valOk && formulaOk;
           if(pass) ok++;
-          h += `<tr><td>${name}</td><td>${isNaN(got)?"—":got.toLocaleString('id-ID')}</td><td>${pass?"✅":"❌"}</td></tr>`;
+          let note;
+          if(isNaN(got)) note = "kosong — sel belum diisi";
+          else if(!valOk) note = "nilai salah — harusnya " + exp.toLocaleString('id-ID');
+          else if(!formulaOk) note = "angka benar tapi masih KETIKAN — studi kasus ini menuntut rumus";
+          else note = "rumus ✓, nilai ✓";
+          h += `<tr><td>${name}</td><td>${isNaN(got)?"—":got.toLocaleString('id-ID')}</td><td>${pass?"✅":"❌"}</td><td>${note}</td></tr>`;
         });
-        h += `</table><p><strong>${ok}/${checks.length}</strong> sel kunci cocok.${ok===checks.length?" 🎉 Output cocok! (checker hanya memverifikasi angka, bukan rumus.)":" Periksa sel bertanda ❌."}</p>`;
+        h += `</table><p><strong>${ok}/${checks.length}</strong> sel kunci cocok.${ok===checks.length?" 🎉 Output cocok! (checker memverifikasi angka dan rumus.)":" Periksa sel bertanda ❌."}</p>`;
         out.innerHTML = h;
       }catch(err){ out.innerHTML = "⚠️ Gagal membaca file: " + String(err).slice(0,120); }
     };
