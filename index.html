@@ -255,6 +255,7 @@ function caseBrief(){
     <div class="card" style="box-shadow:none;margin:12px 0">
       <h3>🔍 Verifikasi modelmu (opsional)</h3>
       <p class="small">Upload file MODEL yang sudah kamu isi — checker memverifikasi nilai dan rumus 12 sel kunci.</p>
+      <p class="small">⚠️ Pastikan workbook sudah di-recalculate dan di-save sebelum upload — checker membaca nilai tersimpan dari file, bukan menghitung ulang rumus. Di Excel/Sheets: tekan recalculate lalu Save/Download. · <span lang="en">Make sure the workbook has been recalculated and saved before uploading — the checker reads saved values from the file, it does not recalculate formulas. In Excel/Sheets: recalculate, then Save/Download.</span></p>
       <input type="file" id="casefile" accept=".xlsx,.xlsm" style="margin:8px 0">
       <button class="btn" onclick="checkCaseFile()">Periksa Workbook</button>
       <div id="casecheck" class="small" style="margin-top:8px"></div>
@@ -273,16 +274,51 @@ function beginCase(){
   timerInt=setInterval(tick,1000);
   renderQ();
 }
-let _xlsxLib = null;
+let _xlsxLib = null, _zipLib = null;
 function wbEnsureLib(cb){
-  if(_xlsxLib) return cb();
+  if(_xlsxLib && _zipLib) return cb();
   const s = document.createElement('script');
-  s.src = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";
-  s.integrity = "sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw";
   s.crossOrigin = "anonymous";
-  s.onload = ()=>{ _xlsxLib = true; cb(); };
-  s.onerror = ()=>{ document.getElementById('casecheck').innerHTML = "⚠️ Gagal memuat library. Cek koneksi lalu coba lagi."; };
+  s.onerror = ()=>{
+    // JSZip gagal dimuat: lanjut tanpa normalisasi namespace (file biasa tetap jalan).
+    if(!_zipLib){ _zipLib = 'failed'; wbEnsureLib(cb); return; }
+    document.getElementById('casecheck').innerHTML = "⚠️ Gagal memuat library. Cek koneksi lalu coba lagi.";
+  };
+  if(!_zipLib){
+    s.src = "https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js";
+    s.integrity = "sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG";
+    s.onload = ()=>{ _zipLib = true; wbEnsureLib(cb); };
+  }else{
+    s.src = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";
+    s.integrity = "sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw";
+    s.onload = ()=>{ _xlsxLib = true; cb(); };
+  }
   document.head.appendChild(s);
+}
+// Normalisasi prefix namespace (mis. ns0:) di XML sheet sebelum XLSX.read —
+// SheetJS 0.18.5 tidak mengenali tag ber-prefix (mis. <ns0:f t="shared">) sehingga
+// metadata rumus hilang dan selnya terbaca sebagai ketikan. File tanpa prefix
+// dikembalikan apa adanya (tanpa perubahan isi).
+async function normalizeXlsxNamespaces(buf){
+  if(typeof JSZip === 'undefined') return buf;
+  try{
+    const zip = await JSZip.loadAsync(buf);
+    let changed = false;
+    const jobs = [];
+    zip.forEach((path, entry)=>{
+      if(/^xl\/worksheets\/[^/]+\.xml$/.test(path)){
+        jobs.push(entry.async('string').then(txt=>{
+          if(/<\/?ns\d+:/.test(txt)){
+            zip.file(path, txt.replace(/<\/?ns\d+:/g, m => m.charAt(1)==='/' ? '</' : '<'));
+            changed = true;
+          }
+        }));
+      }
+    });
+    await Promise.all(jobs);
+    if(!changed) return buf;
+    return await zip.generateAsync({type:'arraybuffer'});
+  }catch(e){ return buf; }
 }
 function checkCaseFile(){
   const inp = document.getElementById('casefile');
@@ -291,9 +327,12 @@ function checkCaseFile(){
   out.innerHTML = "Membaca…";
   wbEnsureLib(()=>{
     const rd = new FileReader();
-    rd.onload = e=>{
+    rd.onload = async e=>{
       try{
-        const wb = XLSX.read(e.target.result, {type:'array'});
+        const buf = await normalizeXlsxNamespaces(e.target.result);
+        // sheetStubs:true — pertahankan sel rumus tanpa nilai tersimpan sebagai stub
+        // (t:'z'); tanpanya SheetJS MEMBUANG sel tersebut dan rumusnya tak terdeteksi.
+        const wb = XLSX.read(buf, {type:'array', sheetStubs:true});
         const ws = wb.Sheets['MODEL'];
         if(!ws){ out.innerHTML = "⚠️ Sheet <b>MODEL</b> tidak ditemukan."; return; }
         // Baca nilai langsung dari objek sel (bukan sheet_to_json): sheet_to_json
@@ -332,16 +371,19 @@ function checkCaseFile(){
           ["Cek A−L−E 2028", lab["Cek: A − L − E (harus 0)"], 3, 0],
         ];
         // sel nilai tunggal (TV/EV/ekuitas/saham): cari di kolom B–D baris label
+        // Terima juga sel rumus tanpa nilai tersimpan (stub t:'z' tanpa v): tanpanya,
+        // EV/pps pada file rumus-belum-tercalculate akan terbaca "kosong" karena
+        // single() hanya mencari nilai numerik.
         const single = (label)=>{
           const i = lab[label]; if(i===undefined) return {v:NaN, cell:undefined};
-          for(const c of [1,2,3]){ const v = num(rows[i][c]); if(!isNaN(v)) return {v, cell:cellAt(i,c)}; }
+          for(const c of [1,2,3]){ const cell = cellAt(i,c); const v = num(rows[i][c]); if(!isNaN(v) || hasFormula(cell)) return {v, cell}; }
           return {v:NaN, cell:undefined};
         };
         const ev = single("Enterprise value (DCF)");
         const pps = single("Nilai per saham");
         checks.push(["Enterprise value (DCF)", null, null, 192388.65, ev.v, ev.cell]);
         checks.push(["Nilai per saham", null, null, 3547.77, pps.v, pps.cell]);
-        let ok = 0, h = "<table class='case'><tr><th>Sel kunci</th><th>Nilai (Rp juta)</th><th></th><th>Keterangan</th></tr>";
+        let ok = 0, uncached = 0, h = "<table class='case'><tr><th>Sel kunci</th><th>Nilai (Rp juta)</th><th></th><th>Keterangan</th></tr>";
         checks.forEach(c=>{
           const [name, ri, ci, exp, pre, preCell] = c;
           const got = (pre!==undefined) ? pre : (ri===undefined ? NaN : num(rows[ri][ci]));
@@ -349,16 +391,22 @@ function checkCaseFile(){
           const tol = (exp===0) ? TOL_BAL : Math.max(TOL, Math.abs(exp)*0.0005);
           const valOk = !isNaN(got) && Math.abs(got-exp) <= tol;
           const formulaOk = hasFormula(cell);
-          const pass = valOk && formulaOk;
+          // Sel rumus tanpa nilai tersimpan (stub t:'z', v:0 dari SheetJS): nilainya tidak
+          // bisa diverifikasi, tapi rumusnya ADA — bedakan dari sel kosong. Tanpa ini,
+          // sel balance-check (exp 0) yang rumusnya belum ter-calculate akan lolos palsu.
+          const noSavedValue = !!(cell && formulaOk && cell.t === 'z');
+          const pass = valOk && formulaOk && !noSavedValue;
           if(pass) ok++;
           let note;
-          if(isNaN(got)) note = "kosong — sel belum diisi";
+          if(noSavedValue){ note = "rumus ada, tapi nilai tersimpan tidak ada — recalculate &amp; save dulu sebelum upload · <span lang=\"en\">formula present, but no saved value — recalculate &amp; save before uploading</span>"; uncached++; }
+          else if(isNaN(got)) note = "kosong — sel belum diisi";
           else if(!valOk) note = "nilai salah — harusnya " + exp.toLocaleString('id-ID');
           else if(!formulaOk) note = "angka benar tapi masih KETIKAN — studi kasus ini menuntut rumus";
           else note = "rumus ✓, nilai ✓";
-          h += `<tr><td>${name}</td><td>${isNaN(got)?"—":got.toLocaleString('id-ID')}</td><td>${pass?"✅":"❌"}</td><td>${note}</td></tr>`;
+          h += `<tr><td>${name}</td><td>${(noSavedValue||isNaN(got))?"—":got.toLocaleString('id-ID')}</td><td>${pass?"✅":"❌"}</td><td>${note}</td></tr>`;
         });
         h += `</table><p><strong>${ok}/${checks.length}</strong> sel kunci cocok.${ok===checks.length?" 🎉 Output cocok! (checker memverifikasi angka dan rumus.)":" Periksa sel bertanda ❌."}</p>`;
+        if(uncached>0) h += `<p>⚠️ ${uncached} sel punya rumus tapi nilainya tidak tersimpan di file — rumus terdeteksi, tapi checker membaca nilai tersimpan, bukan menghitung ulang rumus. Di Excel/Sheets: recalculate lalu Save/Download, lalu upload lagi. · <span lang="en">${uncached} cell${uncached>1?'s':''} ${uncached>1?'have':'has'} formulas but no saved values — the checker reads saved values, it does not recalculate formulas. In Excel/Sheets: recalculate, then Save/Download, then upload again.</span></p>`;
         out.innerHTML = h;
       }catch(err){ out.innerHTML = "⚠️ Gagal membaca file: " + String(err).slice(0,120); }
     };
