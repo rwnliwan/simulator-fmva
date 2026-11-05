@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://simulator-fmva.pages.dev/sitemap.xml
