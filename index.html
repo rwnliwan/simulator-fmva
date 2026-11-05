@@ -29,6 +29,12 @@
   .nav{display:flex;justify-content:space-between;margin-top:16px}
   .flag{background:none;border:1px dashed var(--muted);border-radius:8px;padding:6px 12px;cursor:pointer;color:var(--muted)}
   .flag.on{border-color:var(--acc);color:var(--acc);border-style:solid}
+  /* Modal konfirmasi submit in-page (pengganti confirm() native) — gaya sama seperti .card */
+  .modal-backdrop{position:fixed;inset:0;background:#17203acc;display:none;align-items:center;justify-content:center;z-index:50;padding:20px}
+  .modal-backdrop.open{display:flex}
+  .modal-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px;max-width:480px;width:100%;box-shadow:0 8px 30px #0003;text-align:center}
+  .modal-card h3{margin-top:0}
+  .modal-card .btn{margin:6px 6px 0 0}
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(38px,1fr));gap:6px;margin:12px 0}
   /* SIM-4 fix: kartu pilihan mode pakai grid sendiri — .grid 38px untuk peta soal, bukan untuk kartu besar */
   .mode-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:12px 0}
@@ -67,6 +73,15 @@
   <div id="timer" style="display:none">--:--</div>
 </div></header>
 <div class="wrap" id="app"></div>
+<div class="modal-backdrop" id="submitModal" role="dialog" aria-modal="true" aria-labelledby="submitModalTitle" onclick="if(event.target===this)closeSubmitModal()">
+  <div class="modal-card">
+    <h3 id="submitModalTitle">Soal belum dijawab · <span lang="en">Unanswered questions</span></h3>
+    <p><span id="submitModalCount"></span></p>
+    <p class="small">Tetap selesai dan nilai sekarang? · <span lang="en">Submit now and get your score?</span></p>
+    <button class="btn acc" onclick="confirmSubmitModal()">Tetap selesai · <span lang="en">Submit anyway</span></button>
+    <button class="btn ghost" onclick="closeSubmitModal()">Lanjutkan menjawab · <span lang="en">Keep answering</span></button>
+  </div>
+</div>
 <footer>Latihan format &amp; kecepatan · Bukan soal asli CFI · Lulus = 70%</footer>
 <script>
 const PASS_MARK = 70;
@@ -327,7 +342,15 @@ function tick(){
   const left = deadline-Date.now();
   timerEl.textContent = fmt(left);
   timerEl.classList.toggle('danger', left<10*60000);
-  if(left<=0){ submit(true); }
+  if(left<=0){ submit(true,true); }
+}
+/* Tabel exhibit soal case — dipakai renderQ (saat menjawab) dan review() (Pembahasan) agar tampilannya sama */
+function exhibitHTML(q){
+  if(q.case!==true) return "";
+  return q.exhibit || `<table class="case"><tr><th>PT Maju Bersama (Rp juta)</th><th>2023</th><th>2024</th></tr>
+    <tr><td>Pendapatan</td><td>10.000</td><td>12.000</td></tr>
+    <tr><td>HPP</td><td>6.000</td><td>7.800</td></tr>
+    <tr><td>Beban operasi</td><td>2.000</td><td>2.200</td></tr></table>`;
 }
 function renderQ(){
   const qi = order[cur], q = QS[qi];
@@ -337,12 +360,7 @@ function renderQ(){
     <div class="prog"><div style="width:${Math.round(cur/QS.length*100)}%"></div></div>
     <p class="small">Soal ${cur+1} dari ${QS.length}</p>
     <h2 style="font-size:1.15rem">${q.q}</h2>`;
-  if(q.case===true){
-    h += q.exhibit || `<table class="case"><tr><th>PT Maju Bersama (Rp juta)</th><th>2023</th><th>2024</th></tr>
-    <tr><td>Pendapatan</td><td>10.000</td><td>12.000</td></tr>
-    <tr><td>HPP</td><td>6.000</td><td>7.800</td></tr>
-    <tr><td>Beban operasi</td><td>2.000</td><td>2.200</td></tr></table>`;
-  }
+  h += exhibitHTML(q);
   optOrder.forEach(oi=>{
     h += `<button class="opt ${ans[qi]===oi?'sel':''}" onclick="pick(${oi})">${String.fromCharCode(65+optOrder.indexOf(oi))}. ${q.o[oi]}</button>`;
   });
@@ -368,11 +386,22 @@ function overview(){
   <button class="btn acc" onclick="submit(false)">Selesai &amp; Nilai</button></div>`;
   app.innerHTML = h;
 }
-function submit(auto){
+/* Modal konfirmasi submit in-page (pengganti confirm() native).
+   Auto-submit (timer habis) memanggil submit(true) langsung dan tidak pernah menyentuh modal. */
+function openSubmitModal(un){
+  document.getElementById('submitModalCount').innerHTML =
+    `<strong>${un} soal</strong> belum dijawab. · <span lang="en"><strong>${un} question${un>1?'s':''}</strong> unanswered.</span>`;
+  document.getElementById('submitModal').classList.add('open');
+}
+function closeSubmitModal(){ document.getElementById('submitModal').classList.remove('open'); }
+function confirmSubmitModal(){ closeSubmitModal(); submit(true,false); }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeSubmitModal(); });
+function submit(auto, timedOut){
   if(submitted) return;
+  closeSubmitModal(); // tutup modal bila masih terbuka (mis. timer habis saat modal tampil)
   if(!auto){
     const un = order.filter(qi=>ans[qi]===undefined).length;
-    if(un>0 && !confirm(un+" soal belum dijawab. Tetap selesai?")) return;
+    if(un>0){ openSubmitModal(un); return; }
   }
   submitted=true; clearInterval(timerInt); timerEl.style.display='none';
   let correct=0; const byTopic={};
@@ -387,7 +416,7 @@ function submit(auto){
   const best = +(_bk?localStorage.getItem(_bk):0);
   if(score>best) localStorage.setItem(_bk,score);
   let h = `<div class="card" style="text-align:center">
-    <p class="small">${auto?"Waktu habis — otomatis dinilai":"Ujian selesai"}</p>
+    <p class="small">${(auto&&timedOut)?"Waktu habis — otomatis dinilai":"Ujian selesai"}</p>
     <div class="score ${score>=PASS_MARK?'pass':'fail'}">${score}%</div>
     <p><strong class="${score>=PASS_MARK?'pass':'fail'}">${score>=PASS_MARK?"LULUS 🎉":"BELUM LULUS"}</strong> — benar ${correct} dari ${QS.length} (syarat ${PASS_MARK}%)</p>
     <h3 style="text-align:left">Bedah per topik</h3><table class="case">`;
@@ -406,6 +435,7 @@ function review(){
     const q=QS[qi], my=ans[qi], ok=my===q.a;
     const oo=q._oo || (q._oo = shuffle(q.o.map((_,i)=>i)));
     h += `<p><strong>${i+1}. [${q.t}]</strong> ${q.q}</p>`;
+    h += exhibitHTML(q);
     oo.forEach(oi=>{
       const cls = oi===q.a?'review-correct':(oi===my?'review-wrong':'');
       h += `<div class="opt ${cls}" style="cursor:default">${String.fromCharCode(65+oo.indexOf(oi))}. ${q.o[oi]}${oi===my&&!ok?" ← jawabanmu":""}</div>`;
