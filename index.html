@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulator Ujian FMVA — Edisi Induk</title>
+<style>
+  :root{--ink:#17203a;--muted:#5b6478;--bg:#f4f6fb;--card:#fff;--acc:#b45309;--accbg:#fef3c7;--ok:#15803d;--bad:#b91c1c;--line:#e2e8f0}
+  *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+  .wrap{max-width:820px;margin:0 auto;padding:20px}
+  header.top{position:sticky;top:0;background:var(--ink);color:#fff;padding:10px 0;z-index:10}
+  header.top .wrap{display:flex;justify-content:space-between;align-items:center}
+  #timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:1.2rem;background:#00000040;padding:6px 14px;border-radius:8px}
+  #timer.danger{background:#7f1d1d}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px;margin:16px 0;box-shadow:0 1px 3px #0001}
+  .btn{display:inline-block;background:var(--ink);color:#fff;border:0;border-radius:10px;padding:12px 22px;font-size:1rem;cursor:pointer;margin:6px 6px 6px 0}
+  .btn.acc{background:var(--acc)} .btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
+  .btn:disabled{opacity:.4;cursor:default}
+  .opt{display:block;width:100%;text-align:left;background:#fff;border:1.5px solid var(--line);border-radius:10px;padding:12px 14px;margin:8px 0;cursor:pointer;font-size:1rem}
+  .opt:hover{border-color:var(--ink)} .opt.sel{border-color:var(--acc);background:var(--accbg)}
+  .opt.review-correct{border-color:var(--ok);background:#dcfce7}
+  .opt.review-wrong{border-color:var(--bad);background:#fee2e2}
+  .tag{display:inline-block;font-size:.75rem;background:#eef2ff;color:#3730a3;border-radius:20px;padding:3px 10px;margin-bottom:8px}
+  .prog{height:8px;background:var(--line);border-radius:6px;overflow:hidden;margin:10px 0}
+  .prog>div{height:100%;background:var(--acc);width:0%}
+  table.case{border-collapse:collapse;margin:12px 0;width:100%}
+  table.case td,table.case th{border:1px solid var(--line);padding:8px 12px;text-align:right}
+  table.case td:first-child,table.case th:first-child{text-align:left}
+  .nav{display:flex;justify-content:space-between;margin-top:16px}
+  .flag{background:none;border:1px dashed var(--muted);border-radius:8px;padding:6px 12px;cursor:pointer;color:var(--muted)}
+  .flag.on{border-color:var(--acc);color:var(--acc);border-style:solid}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(38px,1fr));gap:6px;margin:12px 0}
+  /* SIM-4 fix: kartu pilihan mode pakai grid sendiri — .grid 38px untuk peta soal, bukan untuk kartu besar */
+  .mode-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:12px 0}
+  .cell{border:1px solid var(--line);border-radius:8px;padding:8px 0;text-align:center;cursor:pointer;font-size:.85rem;background:#fff}
+  .cell.done{background:#dbeafe}.cell.flagged{border-color:var(--acc);color:var(--acc);font-weight:700}.cell.cur{outline:2px solid var(--ink)}
+  .score{font-size:3rem;font-weight:800}.pass{color:var(--ok)}.fail{color:var(--bad)}
+  .small{color:var(--muted);font-size:.9rem}.exp{background:#f8fafc;border-left:4px solid var(--acc);padding:10px 14px;margin:10px 0;border-radius:0 8px 8px 0}
+  footer{color:var(--muted);font-size:.8rem;text-align:center;padding:24px}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <div><strong>Simulator Ujian FMVA</strong> <span class="small" style="color:#cbd5e1">· Edisi Induk v2</span></div>
+  <div id="timer" style="display:none">--:--</div>
+</div></header>
+<div class="wrap" id="app"></div>
+<footer>Latihan format &amp; kecepatan · Bukan soal asli CFI · Lulus = 70%</footer>
+<script>
+const PASS_MARK = 70;
+// Durasi: 60 soal × 3 mnt = 180 menit (latihan kustom — format resmi CFI kini 50 MCQ termasuk Excel case, 3 jam)
+const DURATION_MIN = 180;
+// Exhibit HTML per kelompok studi kasus (SIM-2 fix: tiap soal case menampilkan tabel yang sesuai angkanya)
+const EX_SINAR = `<table class="case"><tr><th>PT Sinar Abadi (Rp M)</th><th>Nilai</th></tr>
+<tr><td>Pendapatan</td><td>500</td></tr><tr><td>Margin EBITDA</td><td>20%</td></tr>
+<tr><td>D&amp;A</td><td>20</td></tr><tr><td>Pajak</td><td>25%</td></tr>
+<tr><td>Capex</td><td>30</td></tr><tr><td>Kenaikan NWC</td><td>10</td></tr>
+<tr><td>Ekuitas (Ke 12%)</td><td>700</td></tr><tr><td>Utang (Kd 8%)</td><td>300</td></tr>
+<tr><td>g (pertumbuhan perpetuitas)</td><td>3%</td></tr>
+<tr><td>Net debt</td><td>150</td></tr><tr><td>Saham beredar</td><td>100 juta</td></tr></table>`;
+const EX_MJAYA = `<table class="case"><tr><th>PT Maju Jaya — Akuisisi (Rp M)</th><th>Nilai</th></tr>
+<tr><td>EBITDA</td><td>80</td></tr><tr><td>Median EV/EBITDA (trading comps)</td><td>6,0&times;</td></tr>
+<tr><td>Median EV/EBITDA (precedent)</td><td>7,5&times;</td></tr>
+<tr><td>EV hasil DCF</td><td>520</td></tr><tr><td>Net debt</td><td>60</td></tr>
+<tr><td>Tawaran untuk ekuitas</td><td>550</td></tr></table>`;
+const Q = [
+ // ===== FINANCIAL MODELING (6) =====
+ {t:"Financial Modeling",q:"Dalam 3-statement model, beban bunga (interest expense) di income statement sebaiknya merujuk ke…",o:["Angka input manual tiap tahun","Debt schedule (jadwal utang)","Depreciation schedule","Working capital schedule"],a:1,e:"Bunga = suku bunga × saldo utang dari debt schedule. Mengetik manual memutus link model dan rawan salah."},
+ {t:"Financial Modeling",q:"Circularity (referensi sirkular) dalam model keuangan paling sering muncul karena…",o:["Terlalu banyak tab","Interest expense bergantung pada kas, yang bergantung pada interest expense","Rumus SUM yang terlalu panjang","Format sel yang salah"],a:1,e:"Bunga dibayar dari kas, tapi kas akhir bergantung pada laba setelah bunga — lingkaran. Solusi: iteration atau breaker cell."},
+ {t:"Financial Modeling",q:"Best practice: sel input/asumsi (hardcode) sebaiknya…",o:["Dicampur di semua rumus agar ringkas","Dikumpulkan di area/tab asumsi dengan format khusus (mis. biru)","Disembunyikan agar model terlihat bersih","Diketik ulang di setiap rumus"],a:1,e:"Satu sumber asumsi + format biru = audit mudah. Ini konvensi standar industri."},
+ {t:"Financial Modeling",q:"Neraca tidak balance. Cek tercepat pertama yang dilakukan auditor model?",o:["Cek satu-satu tiap sel","Buat baris cek: Total Aset − Liabilitas − Ekuitas = 0 per periode","Hapus dan bangun ulang","Ubah angka sampai balance"],a:1,e:"Baris balance-check per periode langsung menunjukkan di periode mana selisih mulai muncul."},
+ {t:"Financial Modeling",q:"PP&E awal Rp500 jt, capex Rp100 jt, depresiasi Rp20 jt. PP&E akhir?",o:["Rp580 jt","Rp600 jt","Rp520 jt","Rp420 jt"],a:0,e:"Saldo akhir = awal + capex − depresiasi = 500 + 100 − 20 = 580."},
+ {t:"Financial Modeling",q:"Rumus Free Cash Flow to Firm (FCFF) yang benar:",o:["Laba bersih + depresiasi − capex","NOPAT + depresiasi − capex − perubahan modal kerja","EBITDA − pajak − dividen","Arus kas operasi + arus kas pendanaan"],a:1,e:"FCFF = NOPAT + D&A − Capex − ΔNWC. Mengukur kas untuk semua investor."},
+ // ===== VALUATION (6) =====
+ {t:"Valuation",q:"Enterprise Value (EV) = …",o:["Harga saham × jumlah saham","Equity value + net debt","Total aset − total liabilitas","Market cap − kas"],a:1,e:"EV = nilai ekuitas + utang bersih. EV milik semua investor; market cap hanya pemegang saham."},
+ {t:"Valuation",q:"Jika WACC naik (asumsi lain tetap), nilai hasil DCF akan…",o:["Naik","Turun","Tetap","Naik lalu turun"],a:1,e:"Diskonto lebih besar → present value lebih kecil. Hubungan terbalik."},
+ {t:"Valuation",q:"EV/EBITDA 8,0× dan EBITDA Rp250 miliar. Enterprise value?",o:["Rp2,0 triliun","Rp31,25 miliar","Rp258 miliar","Rp242 miliar"],a:0,e:"EV = 8,0 × 250 miliar = Rp2 triliun."},
+ {t:"Valuation",q:"CAPM: risk-free 6%, beta 1,2, market risk premium 5%. Cost of equity?",o:["11,0%","12,0%","13,2%","17,0%"],a:1,e:"Ke = 6% + 1,2 × 5% = 12%."},
+ {t:"Valuation",q:"Terminal value (Gordon growth): FCF tahun depan Rp100 M, g=3%, WACC=10%. TV?",o:["Rp1.000 M","Rp1.471 M","Rp1.429 M","Rp3.333 M"],a:2,e:"Soal memberi FCF TAHUN DEPAN (CF1). TV = CF1/(WACC−g) = 100/0,07 ≈ Rp1.429 M. Rp1.471 M = jebakan double-growth (mengalikan 1,03 lagi)."},
+ {t:"Valuation",q:"Manakah yang BUKAN metodologi valuasi utama?",o:["DCF analysis","Comparable company analysis","Precedent transactions","Melihat rasio saja tanpa menghitung nilai"],a:3,e:"Rasio tanpa kesimpulan nilai bukan valuasi. Tiga metode utama: DCF, comps, precedents."},
+ // ===== FINANCE (2) =====
+ {t:"Finance",q:"Dua proyek mutually exclusive: A NPV lebih tinggi, B IRR lebih tinggi. Pilih…",o:["B (IRR lebih tinggi)","A (NPV lebih tinggi)","Yang payback lebih cepat","Undi"],a:1,e:"NPV mengukur nilai absolut dalam rupiah. IRR bisa menyesatkan karena asumsi reinvestment."},
+ {t:"Finance",q:"Kelemahan utama payback period?",o:["Sulit dihitung","Mengabaikan time value of money dan arus kas setelah payback","Butuh data terlalu banyak","Tidak bisa untuk proyek rugi"],a:1,e:"Payback mengabaikan kapan uang datang dan apa yang terjadi setelah modal kembali."},
+ // ===== ACCOUNTING (2) =====
+ {t:"Accounting",q:"Dengan basis akrual (accrual), pendapatan diakui saat…",o:["Kas diterima","Jasa/barang diserahkan (earned)","Faktur dicetak","Pelanggan berjanji membayar"],a:1,e:"Akrual: akui saat earned, bukan saat kas masuk. Ini sebabnya laba ≠ kas."},
+ {t:"Accounting",q:"Kenaikan piutang usaha (receivable) berdampak ke arus kas operasi…",o:["Menambah","Mengurangi","Tidak berpengaruh","Menambah dua kali"],a:1,e:"Piutang naik = jualan belum jadi kas → penyesuaian negatif di operating cash flow."},
+ // ===== EXCEL (2) =====
+ {t:"Excel",q:"Perbedaan XNPV vs NPV?",o:["XNPV lebih cepat","XNPV memakai tanggal aktual tiap arus kas (tak harus periodik)","Tidak ada beda","NPV hanya untuk bulanan"],a:1,e:"NPV asumsikan periode sama; XNPV mendiskonto per tanggal aktual — wajib untuk arus kas tak beraturan."},
+ {t:"Excel",q:"Keunggulan INDEX-MATCH dibanding VLOOKUP?",o:["Lebih pendek ditulis","Bisa lookup ke kiri dan tahan terhadap insert kolom","Selalu lebih cepat","Bisa tanpa tabel"],a:1,e:"VLOOKUP hanya cari ke kanan dan rusak jika kolom disisipkan; INDEX-MATCH tidak."},
+ // ===== BUDGETING (1) =====
+ {t:"Budgeting & Forecasting",q:"Untuk pos beban, variance disebut favorable jika…",o:["Aktual > anggaran","Aktual < anggaran","Aktual = anggaran","Anggaran = 0"],a:1,e:"Beban di bawah anggaran = hemat = favorable. Untuk pendapatan sebaliknya."},
+ // ===== PRESENTATION (1) =====
+ {t:"Presentation & Visuals",q:"Menunjukkan komposisi margin selama 5 tahun — chart terbaik?",o:["Pie chart per tahun","Stacked bar/area chart","Scatter plot","Gauge chart"],a:1,e:"Pie per tahun memaksa banding antar-gambar; stacked bar/area menunjukkan tren komposisi sekaligus."},
+ // ===== CASE STUDY (3) =====
+ {t:"Case Study",case:true,q:"Kasus: PT Maju Bersama (Rp juta). Pendapatan 2023: 10.000, 2024: 12.000. HPP 2023: 6.000, 2024: 7.800. Beban operasi 2023: 2.000, 2024: 2.200. — Berapa gross margin 2024?",o:["40,0%","35,0%","30,0%","50,0%"],a:1,e:"(12.000−7.800)/12.000 = 4.200/12.000 = 35%."},
+ {t:"Case Study",case:true,q:"Kasus yang sama — pertumbuhan pendapatan YoY 2024?",o:["16,7%","20,0%","25,0%","12,0%"],a:1,e:"(12.000−10.000)/10.000 = 20%."},
+ {t:"Case Study",case:true,q:"Kasus yang sama — operating profit 2024 vs 2023?",o:["Naik dari 2.000 ke 2.400","Tetap 2.000 (flat)","Turun ke 1.800","Naik ke 2.200"],a:1,e:"2024: 12.000−7.800−2.200 = 2.000. 2023: 10.000−6.000−2.000 = 2.000. Pendapatan naik tapi margin tergerus — temuan analis."},
+// ===== FINANCIAL MODELING (+8 → total 14) =====
+ {t:"Financial Modeling",q:"Proyeksi driver-based: tahun ini 12.000 unit × Rp10.000 = Rp120 jt. Tahun depan volume +10%, harga +5%. Pendapatan proyeksi?",o:["Rp138,6 jt","Rp132,0 jt","Rp138,0 jt","Rp126,0 jt"],a:0,e:"13.200 unit × Rp10.500 = Rp138,6 jt. Driver dikali, bukan dijumlah persennya (1,10×1,05=1,155)."},
+ {t:"Financial Modeling",q:"Piutang usaha Rp30 jt, pendapatan tahunan Rp360 jt. Days Sales Outstanding (DSO)?",o:["30 hari","12 hari","120 hari","365 hari"],a:0,e:"DSO = 30/360 × 365 ≈ 30 hari. Artinya rata-rata pelanggan membayar 30 hari setelah penjualan."},
+ {t:"Financial Modeling",q:"Untuk melihat bagaimana laba berubah pada 10 nilai asumsi pertumbuhan yang berbeda, tool Excel yang tepat?",o:["Goal Seek","Data Table (What-If Analysis)","PivotTable","VLOOKUP"],a:1,e:"Data Table menjalankan ulang rumus untuk tiap nilai asumsi — inti analisis sensitivitas satu/dua variabel."},
+ {t:"Financial Modeling",q:"Biaya Rp50 jt yang memperpanjang umur mesin 5 tahun dicatat sebagai…",o:["Beban operasi tahun berjalan","Capex (dikapitalisasi, disusutkan 5 tahun)","Pengurang pendapatan","Modal kerja"],a:1,e:"Manfaat lebih dari 1 tahun → dikapitalisasi sebagai aset lalu disusutkan. Langsung dibebankan membuat laba tahun ini understated."},
+ {t:"Financial Modeling",q:"Metode declining balance vs garis lurus (straight-line): beban depresiasi…",o:["Sama tiap tahun pada keduanya","Lebih besar di tahun-tahun awal pada declining balance","Lebih besar di tahun-tahun awal pada garis lurus","Nol di tahun pertama keduanya"],a:1,e:"Declining balance = tarif × nilai buku yang menyusut → beban besar di awal, kecil di akhir. Garis lurus rata tiap tahun."},
+ {t:"Financial Modeling",q:"Persediaan naik Rp10 jt, utang usaha naik Rp4 jt (lainnya tetap). Perubahan modal kerja bersih (ΔNWC)?",o:["+Rp6 jt","−Rp6 jt","+Rp14 jt","Rp0"],a:0,e:"ΔNWC = Δaset lancar − Δliabilitas lancar = 10 − 4 = +6. NWC naik = kas terikat → arus kas operasi turun Rp6 jt."},
+ {t:"Financial Modeling",q:"Konvensi 'mid-year' dalam DCF mengasumsikan…",o:["Arus kas diterima di akhir tahun","Arus kas diterima merata — didiskon setengah periode lebih awal","Diskon dihitung tengah malam","Tahun fiskal dimulai Juli"],a:1,e:"Arus kas tidak menunggu 31 Desember — mid-year mendiskon tiap tahun setengah periode lebih awal sehingga valuasi sedikit lebih tinggi."},
+ {t:"Financial Modeling",q:"Laba ditahan awal Rp200 jt, laba bersih Rp60 jt, dividen Rp20 jt. Laba ditahan akhir?",o:["Rp240 jt","Rp220 jt","Rp260 jt","Rp180 jt"],a:0,e:"200 + 60 − 20 = 240. Link wajib 3-statement: laba bersih masuk ke ekuitas melalui laba ditahan."},
+// ===== VALUATION (+8 → total 14) =====
+ {t:"Valuation",q:"FCF Rp100 M tumbuh 10%/tahun selama 3 tahun, lalu 3% selamanya. WACC 12%. Enterprise value?",o:["Rp1.374 M","Rp1.342 M","Rp1.523 M","Rp1.813 M"],a:0,e:"PV FCF tahun 1–3: 98,2 + 96,5 + 94,7. TV = 133,1×1,03/0,09 = 1.523 → PV-nya 1.084. Total ≈ Rp1.374 M."},
+ {t:"Valuation",q:"Ekuitas Rp600 M (Ke 14%), utang Rp400 M (Kd 8%, pajak 25%). WACC?",o:["10,8%","11,6%","10,0%","12,2%"],a:0,e:"0,6×14% + 0,4×8%×(1−0,25) = 8,4 + 2,4 = 10,8%. Biaya utang dihitung setelah pajak."},
+ {t:"Valuation",q:"Utang berbunga Rp500 M, kas Rp120 M. Net debt?",o:["Rp380 M","Rp500 M","Rp620 M","Rp120 M"],a:0,e:"Net debt = utang − kas = 380. EV dikurangi net debt menjadi equity value."},
+ {t:"Valuation",q:"EV Rp2.000 M, net debt Rp380 M. Equity value?",o:["Rp1.620 M","Rp2.380 M","Rp2.000 M","Rp1.880 M"],a:0,e:"Equity value = EV − net debt = 1.620. Jembatan standar dari enterprise value ke equity value."},
+ {t:"Valuation",q:"Median EV/EBITDA perusahaan pembanding 7,5×; EBITDA target Rp300 M. Implied EV?",o:["Rp2.250 M","Rp40 M","Rp307,5 M","Rp292,5 M"],a:0,e:"7,5 × 300 = 2.250. Pilih pembanding yang benar-benar sepadan — multiple tanpa konteks menyesatkan."},
+ {t:"Valuation",q:"Precedent transactions biasanya menghasilkan multiple lebih tinggi dari trading comps karena…",o:["Datanya lebih baru","Mencakup premium pengendalian (control premium) akuisisi","Perusahaannya lebih besar","Metodenya berbeda"],a:1,e:"Harga akuisisi = harga saham + premium kendali (umumnya 20–40%). Trading comps = harga minoritas tanpa premium."},
+ {t:"Valuation",q:"Pada DCF tipikal, komponen yang sering menyumbang >60% dari enterprise value adalah…",o:["FCF tahun 1","Terminal value","Modal kerja","Capex tahun 1"],a:1,e:"Terminal value mendominasi karena mencakup 'selamanya'. Makanya asumsi g dan WACC jauh lebih menentukan daripada detail tahun 1–5."},
+ {t:"Valuation",q:"FCFF Rp100 M, beban bunga Rp20 M, pajak 25%, net borrowing Rp10 M. FCFE?",o:["Rp95 M","Rp90 M","Rp110 M","Rp85 M"],a:0,e:"FCFE = 100 − 20×0,75 + 10 = 95. FCFF milik semua investor; FCFE hanya milik pemegang saham."},
+// ===== FINANCE (+3 → total 5) =====
+ {t:"Finance",q:"Risiko yang BISA dihilangkan dengan diversifikasi portofolio?",o:["Risiko pasar (systematic)","Risiko spesifik perusahaan (unsystematic)","Risiko suku bunga","Risiko inflasi"],a:1,e:"Risiko idiosinkratik (manajemen, produk) terdiversifikasi habis. Risiko sistematis tetap — itu yang dihargai pasar."},
+ {t:"Finance",q:"Proyek yang risikonya JAUH di atas rata-rata perusahaan sebaiknya didiskon dengan…",o:["WACC perusahaan","Tingkat diskonto yang disesuaikan risiko (lebih tinggi)","Risk-free rate","Cost of debt"],a:1,e:"WACC = rata-rata perusahaan. Proyek lebih berisiko butuh hurdle lebih tinggi, atau NPV-nya terlihat bagus padahal tidak."},
+ {t:"Finance",q:"Dividen saham preferen vs bunga obligasi — perbedaan pokoknya…",o:["Keduanya wajib dibayar","Dividen preferen bisa ditunda tanpa default; bunga wajib","Dividen preferen tax-deductible","Tidak ada beda"],a:1,e:"Bunga = kewajiban kontraktual (gagal bayar = default). Dividen preferen bisa dilewatkan — tapi menumpuk bila kumulatif."},
+// ===== ACCOUNTING (+3 → total 5) =====
+ {t:"Accounting",q:"Aset Rp100 jt, umur 5 tahun, nilai sisa Rp10 jt. Beban depresiasi garis lurus per tahun?",o:["Rp18 jt","Rp20 jt","Rp22 jt","Rp10 jt"],a:0,e:"(100−10)/5 = 18. Nilai sisa dikurangkan dulu — kesalahan umum langsung membagi 100/5."},
+ {t:"Accounting",q:"Prinsip matching (padanan) mensyaratkan beban diakui…",o:["Saat kas keluar","Bersamaan dengan pendapatan yang dihasilkannya","Di awal tahun","Saat faktur diterima"],a:1,e:"Beban dipadankan dengan pendapatan terkaitnya — fondasi akuntansi akrual, alasan HPP mengikuti penjualan."},
+ {t:"Accounting",q:"Di bawah IFRS 16, finance lease (dibanding operating lease cara lama) membuat EBITDA…",o:["Lebih rendah","Lebih tinggi","Tidak berubah","Nol"],a:1,e:"Beban sewa operasi berada di atas EBITDA; finance lease memecahnya jadi beban bunga + depresiasi (di bawah EBITDA) → EBITDA naik, utang tercatat naik."},
+// ===== EXCEL (+3 → total 5) =====
+ {t:"Excel",q:"IRR mengasumsikan arus kas periodik beraturan; untuk tanggal yang tak beraturan gunakan…",o:["NPV","XIRR","PMT","RATE"],a:1,e:"XIRR mendiskonto per tanggal aktual tiap arus kas. Wajib untuk arus kas nyata yang tanggalnya acak."},
+ {t:"Excel",q:"Menjumlahkan penjualan dengan DUA syarat (wilayah = Timur DAN bulan = Jan):",o:["SUMIF","SUMIFS","COUNTIF","SUMPRODUCT saja"],a:1,e:"SUMIFS = multi-kriteria. SUMIF hanya menangani satu syarat."},
+ {t:"Excel",q:"Pengganti modern VLOOKUP yang bisa lookup dua arah dan tidak rusak saat kolom disisipkan?",o:["HLOOKUP","XLOOKUP","LOOKUP lama","MATCH saja"],a:1,e:"XLOOKUP mencari ke segala arah dan memakai array, bukan nomor kolom — kebal terhadap insert kolom."},
+// ===== BUDGETING & FORECASTING (+1 → total 2) =====
+ {t:"Budgeting & Forecasting",q:"Rolling forecast 4 kuartal: setiap akhir kuartal…",o:["Horizon memendek 1 kuartal","Ditambah 1 kuartal baru di ujung — horizon tetap 4","Dibuang dan dibuat tahunan","Anggaran dikunci permanen"],a:1,e:"Rolling = jendela geser. Selalu 4 kuartal ke depan — relevan untuk FP&A yang dinamis."},
+// ===== PRESENTATION & VISUALS (+1 → total 2) =====
+ {t:"Presentation & Visuals",q:"Menjelaskan jembatan dari laba tahun lalu ke laba tahun ini (efek harga, volume, biaya): chart terbaik?",o:["Pie chart","Waterfall (bridge) chart","Scatter plot","Heatmap"],a:1,e:"Waterfall menunjukkan tiap pendorong penambah/pengurang sampai nilai akhir — standar untuk variance walk."},
+// ===== CASE STUDY A — PT Sinar Abadi: DCF-lite 5 bagian =====
+ {t:"Case Study",case:true,exhibit:EX_SINAR,q:"Kasus PT Sinar Abadi (Rp M): pendapatan 500, margin EBITDA 20%, D&A 20, pajak 25%, capex 30, kenaikan NWC 10. Berapa FCFF?",o:["Rp40 M","Rp60 M","Rp80 M","Rp30 M"],a:0,e:"EBITDA 100 − D&A 20 = EBIT 80; NOPAT = 80×0,75 = 60; FCFF = 60 + 20 − 30 − 10 = 40."},
+ {t:"Case Study",case:true,exhibit:EX_SINAR,q:"Kasus yang sama — ekuitas 700 (Ke 12%), utang 300 (Kd 8%), pajak 25%. Berapa WACC?",o:["10,2%","11,0%","9,6%","12,0%"],a:0,e:"0,7×12% + 0,3×8%×0,75 = 8,4 + 1,8 = 10,2%."},
+ {t:"Case Study",case:true,exhibit:EX_SINAR,q:"Kasus yang sama — FCF Rp40 M tumbuh 3% selamanya. Berapa enterprise value?",o:["Rp572 M","Rp556 M","Rp392 M","Rp1.333 M"],a:0,e:"EV = 40×1,03/(0,102−0,03) = 41,2/0,072 ≈ 572. Jebakan umum: lupa menumbuhkan pembilang (dapat 556)."},
+ {t:"Case Study",case:true,exhibit:EX_SINAR,q:"Kasus yang sama — net debt Rp150 M. Berapa equity value?",o:["Rp422 M","Rp572 M","Rp722 M","Rp272 M"],a:0,e:"Equity value = EV − net debt = 572 − 150 = 422."},
+ {t:"Case Study",case:true,exhibit:EX_SINAR,q:"Kasus yang sama — 100 juta saham beredar. Nilai wajar per saham?",o:["Rp4.220","Rp5.720","Rp4.020","Rp2.720"],a:0,e:"422 M ÷ 100 jt saham = Rp4.220 per saham."},
+// ===== CASE STUDY B — Akuisisi PT Maju Jaya: comps + precedent + football field + AI governance =====
+ {t:"Case Study",case:true,exhibit:EX_MJAYA,q:"Kasus akuisisi PT Maju Jaya (Rp M): EBITDA 80; median EV/EBITDA comps 6,0×. Implied EV dari trading comps?",o:["Rp480 M","Rp13,3 M","Rp86 M","Rp74 M"],a:0,e:"6,0 × 80 = 480."},
+ {t:"Case Study",case:true,exhibit:EX_MJAYA,q:"Kasus yang sama — median precedent transactions 7,5×. Implied EV?",o:["Rp600 M","Rp480 M","Rp520 M","Rp10,7 M"],a:0,e:"7,5 × 80 = 600. Lebih tinggi dari comps karena harga akuisisi mencakup control premium."},
+ {t:"Case Study",case:true,exhibit:EX_MJAYA,q:"Kasus yang sama — ditambah hasil DCF: EV 520. Berapa rentang football field?",o:["Rp480–600 M","Rp480–520 M","Rp520–600 M","Rp420–540 M"],a:0,e:"Min–max dari {480, 600, 520} = 480–600. Football field memetakan sebaran hasil antar-metode."},
+ {t:"Case Study",case:true,exhibit:EX_MJAYA,q:"Kasus yang sama — net debt Rp60 M. Tawaran Rp550 M untuk ekuitas berarti premi berapa vs nilai comps-implied?",o:["≈31%","≈15%","≈8%","Diskon 10%"],a:0,e:"Ekuitas comps-implied = 480 − 60 = 420. (550−420)/420 ≈ 31% — di atas rentang comps, di bawah precedent."},
+ {t:"Case Study",case:true,exhibit:EX_MJAYA,q:"Kasus yang sama — model akuisisi ini disusun dengan bantuan AI. Kontrol tata kelola (governance) yang WAJIB?",o:["Percaya output AI bila terlihat rapi","Manusia memverifikasi tiap asumsi & angka; AI tidak memvonis","Rahasiakan pemakaian AI dari komite","Minta AI yang sama memverifikasi dirinya"],a:1,e:"AI boleh membangun cepat, tapi keputusan tetap manusia — verifikasi independen tiap input. Prinsipnya: bukan AI menilai AI."},
+];
+// ===== STUDI KASUS EXCEL 1 — PT Cahaya Timur (distributor consumer goods, Rp juta) =====
+// Jawab dari model yang kamu bangun sendiri di Google Sheets (sheet MODEL).
+const CASE_Q = [
+ {t:"Studi Kasus Excel",case:"excel",q:"Dari modelmu: berapa Pendapatan PT Cahaya Timur tahun 2026?",o:["Rp151.800 juta","Rp138.000 juta","Rp165.600 juta","Rp150.000 juta"],a:0,e:"138.000 × (1 + 10%) = 151.800. Jebakan: 138.000 (lupa growth), 165.600 (growth 20%)."},
+ {t:"Studi Kasus Excel",case:"excel",q:"Berapa EBIT 2026?",o:["Rp22.860 juta","Rp30.360 juta","Rp20.860 juta","Rp17.830,8 juta"],a:0,e:"151.800 − 61%×151.800 (HPP) − 19%×151.800 (opex) − 7.500 (D&A) = 22.860. 30.360 = EBITDA (lupa kurangi D&A); 17.830,8 = NOPAT (sudah kena pajak 22%)."},
+ {t:"Studi Kasus Excel",case:"excel",q:"Berapa Arus kas operasi (CFO) 2026?",o:["Rp21.286,8 juta","Rp23.770,8 juta","Rp26.254,8 juta","Rp13.846,8 juta"],a:0,e:"16.270,8 + 7.500 − 2.484 = 21.286,8. ΔNWC = 18%×151.800 − 18%×138.000 = 2.484. 13.846,8 = FCFF (sudah dikurangi capex) — bukan CFO."},
+ {t:"Studi Kasus Excel",case:"excel",q:"Berapa FCFF 2027?",o:["Rp15.576,48 juta","Rp18.308,88 juta","Rp23.516,48 juta","Rp14.016,48 juta"],a:0,e:"NOPAT 2027 + D&A − capex − ΔNWC = 15.576,48. 23.516,48 = CFO (lupa capex); 14.016,48 = memakai NI bukan NOPAT sebagai basis."},
+ {t:"Studi Kasus Excel",case:"excel",q:"Berapa NWC akhir 2028 (level, bukan perubahan)?",o:["Rp33.062,04 juta","Rp30.056,40 juta","Rp3.005,64 juta","Rp49.593,06 juta"],a:0,e:"18% × 183.678 (revenue 2028) = 33.062,04. 3.005,64 = ΔNWC 2028 — itu perubahannya, bukan levelnya."},
+ {t:"Studi Kasus Excel",case:"excel",q:"Berapa Kas akhir 2028?",o:["Rp52.261,41 juta","Rp36.303,28 juta","Rp15.958,13 juta","Rp67.261,41 juta"],a:0,e:"Kas 2025 + akumulasi ΔKas 2026–2028 = 52.261,41. 36.303,28 = kas akhir 2027; 15.958,13 = Δkas 2028 saja."},
+ {t:"Studi Kasus Excel",case:"excel",q:"Berapa Enterprise value (DCF)?",o:["Rp192.388,65 juta","Rp177.388,65 juta","Rp211.248,01 juta","Rp249.174,00 juta"],a:0,e:"PV FCFF 2026–2028 + PV terminal value = 192.388,65. 177.388,65 = equity value (sudah kurang net debt); 211.248,01 = TV saja, belum didiskon."},
+ {t:"Studi Kasus Excel",case:"excel",q:"Berapa nilai wajar per saham?",o:["Rp3.547,77","Rp3.847,77","Rp3.247,77","Rp4.224,96"],a:0,e:"(192.388,65 − 15.000) ÷ 50 juta saham = 3.547,77. Net debt = 30.000 − 15.000 (kas 2025) = 15.000."},
+ {t:"Studi Kasus Excel",case:"excel",q:"Jika WACC naik ke 12% (asumsi lain tetap), berapa EV?",o:["Rp171.784,31 juta","Rp192.388,65 juta","Rp189.011,00 juta","Rp211.248,01 juta"],a:0,e:"Diskon ulang dengan WACC 12%: EV turun ke 171.784,31. Inilah sensitivitas valuasi terhadap WACC — beberapa persen mengubah kesimpulan."},
+ {t:"Studi Kasus Excel",case:"excel",q:"Berapa DSO (days sales outstanding) 2026?",o:["54,75 hari","33 hari","66 hari","45 hari"],a:0,e:"AR = 15% × revenue → DSO = 0,15 × 365 = 54,75 hari. 33 hari = DPO (utang usaha 9% × 365) — jangan tertukar."},
+];
+const CASE_DUR_MIN = 90;
+const CASE_FILE_ID = "1YBJyUI3nuTwyL0Oi3AQMmagtcuvi30FH";
+let QS = Q, QS_DUR = DURATION_MIN, QS_MODE = "mcq";
+const app = document.getElementById('app');
+const timerEl = document.getElementById('timer');
+let order=[], ans={}, flagged=new Set(), cur=0, deadline=null, timerInt=null, submitted=false;
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function fmt(ms){const s=Math.max(0,Math.floor(ms/1000));const h=Math.floor(s/3600),m=Math.floor(s%3600/60),ss=s%60;return (h?h+":":"")+String(m).padStart(2,"0")+":"+String(ss).padStart(2,"0");}
+
+function startScreen(){
+  const best = localStorage.getItem('fmva_sim_best');
+  const cbest = localStorage.getItem('fmva_case_best');
+  app.innerHTML = `<div class="card">
+    <span class="tag">Edisi Induk · v2</span>
+    <h1>Simulator Ujian FMVA</h1>
+    <p>Pilih mode latihan. Keduanya <strong>timed tanpa pause</strong>, lulus <strong>${PASS_MARK}%</strong>.</p>
+    <div class="mode-grid">
+      <div class="card" style="box-shadow:none">
+        <h3>📝 Ujian MCQ</h3>
+        <p class="small">Latihan kustom 60 soal: pilihan ganda acak + studi kasus mini. Bukan simulasi format resmi CFI.</p>
+        <ul class="small"><li><strong>${Q.length} soal</strong> — acak tiap percobaan</li><li><strong>${DURATION_MIN} menit</strong> (3 mnt/soal)</li><li>Hasil: nilai + bedah per topik + pembahasan</li></ul>
+        ${best?`<p class="small">Skor terbaikmu: <strong>${best}%</strong></p>`:""}
+        <button class="btn acc" onclick="startExam()">Mulai Ujian</button>
+      </div>
+      <div class="card" style="box-shadow:none">
+        <h3>📊 Studi Kasus Excel</h3>
+        <p class="small">Bangun model 3-statement + DCF dari nol di Google Sheets, lalu jawab 10 soal dari modelmu.</p>
+        <ul class="small"><li><strong>90 menit</strong> — bangun model + jawab</li><li>Workbook: PT Cahaya Timur (Rp juta)</li><li>Upload checker verifikasi sel kuncimu</li></ul>
+        ${cbest?`<p class="small">Skor terbaikmu: <strong>${cbest}%</strong></p>`:""}
+        <button class="btn acc" onclick="caseBrief()">Mulai Studi Kasus</button>
+      </div>
+    </div>
+    <p class="small">Tips: satu tab saja — seperti ujian asli.</p>
+  </div>
+  <div class="card"><h3>Cakupan v2</h3><p class="small">Financial Modeling · Valuation · Finance · Accounting · Excel · Budgeting &amp; Forecasting · Presentation &amp; Visuals · Case Study — cakupan topik terinspirasi blueprint CFI (bukan replika resmi). Ditambah 1 studi kasus Excel penuh (PT Cahaya Timur).</p></div>`;
+}
+function startExam(){
+  QS = Q; QS_DUR = DURATION_MIN; QS_MODE = "mcq";
+  order = shuffle(QS.map((_,i)=>i));
+  ans={}; flagged=new Set(); cur=0; submitted=false;
+  deadline = Date.now()+QS_DUR*60000;
+  timerEl.style.display='block'; tick();
+  timerInt=setInterval(tick,1000);
+  renderQ();
+}
+// ===== STUDI KASUS EXCEL =====
+function caseBrief(){
+  app.innerHTML = `<div class="card">
+    <span class="tag">Studi Kasus Excel 1 · 90 menit</span>
+    <h2>PT Cahaya Timur — bangun model, lalu jawab</h2>
+    <p>Distributor consumer goods fiktif (angka dalam <strong>Rp juta</strong>). Alurnya:</p>
+    <ol>
+      <li><strong>Unduh workbook</strong> (sheet DATASET berisi historis 2024–2025 + asumsi; sheet MODEL template kosong).</li>
+      <li>Bangun model di <strong>Google Sheets</strong>: Income Statement → NWC schedule → Balance Sheet → Cash Flow → FCFF &amp; DCF. Isi sel <strong>biru</strong> dengan rumus.</li>
+      <li>Klik <strong>Mulai Timer</strong> — 90 menit untuk membangun + menjawab <strong>10 soal</strong> dari modelmu sendiri.</li>
+      <li>Opsional: <strong>upload workbook</strong>-mu — checker memverifikasi 12 sel kunci langsung dari file.</li>
+    </ol>
+    <p><a class="btn" href="https://drive.google.com/uc?export=download&id=${CASE_FILE_ID}" target="_blank" rel="noopener">⬇ Unduh Workbook (xlsx)</a></p>
+    <div class="card" style="box-shadow:none;margin:12px 0">
+      <h3>🔍 Verifikasi modelmu (opsional)</h3>
+      <p class="small">Upload file MODEL yang sudah kamu isi — checker membaca 12 sel kunci (bukan menilai rumus).</p>
+      <input type="file" id="casefile" accept=".xlsx,.xlsm" style="margin:8px 0">
+      <button class="btn" onclick="checkCaseFile()">Periksa Workbook</button>
+      <div id="casecheck" class="small" style="margin-top:8px"></div>
+    </div>
+    <button class="btn acc" onclick="beginCase()">Mulai Timer 90 Menit</button>
+    <button class="btn ghost" onclick="startScreen()">← Kembali</button>
+  </div>`;
+  window.scrollTo(0,0);
+}
+function beginCase(){
+  QS = CASE_Q; QS_DUR = CASE_DUR_MIN; QS_MODE = "case";
+  order = shuffle(QS.map((_,i)=>i));
+  ans={}; flagged=new Set(); cur=0; submitted=false;
+  deadline = Date.now()+QS_DUR*60000;
+  timerEl.style.display='block'; tick();
+  timerInt=setInterval(tick,1000);
+  renderQ();
+}
+let _xlsxLib = null;
+function wbEnsureLib(cb){
+  if(_xlsxLib) return cb();
+  const s = document.createElement('script');
+  s.src = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";
+  s.integrity = "sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw";
+  s.crossOrigin = "anonymous";
+  s.onload = ()=>{ _xlsxLib = true; cb(); };
+  s.onerror = ()=>{ document.getElementById('casecheck').innerHTML = "⚠️ Gagal memuat library. Cek koneksi lalu coba lagi."; };
+  document.head.appendChild(s);
+}
+function checkCaseFile(){
+  const inp = document.getElementById('casefile');
+  const out = document.getElementById('casecheck');
+  if(!inp.files.length){ out.innerHTML = "Pilih file .xlsx dulu."; return; }
+  out.innerHTML = "Membaca…";
+  wbEnsureLib(()=>{
+    const rd = new FileReader();
+    rd.onload = e=>{
+      try{
+        const wb = XLSX.read(e.target.result, {type:'array'});
+        const ws = wb.Sheets['MODEL'];
+        if(!ws){ out.innerHTML = "⚠️ Sheet <b>MODEL</b> tidak ditemukan."; return; }
+        const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+        const lab = {};
+        rows.forEach((r,i)=>{ if(typeof r[0]==='string' && !(r[0].trim() in lab)) lab[r[0].trim()] = i; });
+        const num = v => (typeof v==='number') ? v : (typeof v==='string' ? parseFloat(v.replace(/[^0-9.\-]/g,'')) : NaN);
+        const TOL = 0.011 * 1000; // toleransi Rp11 jt untuk output biasa (angka dalam Rp juta)
+        const TOL_BAL = 1; // SIM-3 fix: toleransi KETAT untuk balance-check (harus ≈0): Rp1 juta. Terpisah dari TOL output.
+        const checks = [
+          ["Pendapatan 2026", lab["Pendapatan"], 1, 151800],
+          ["EBIT 2026", lab["EBIT"], 1, 22860],
+          ["Laba bersih 2026", lab["Laba bersih"], 1, 16270.8],
+          ["NWC 2028", lab["NWC"], 3, 33062.04],
+          ["CFO 2026", lab["Arus kas operasi (CFO)"], 1, 21286.8],
+          ["Kas akhir 2028", lab["Kas akhir"], 3, 52261.41],
+          ["FCFF 2027", lab["FCFF"], 2, 15576.48],
+          ["Cek A−L−E 2026", lab["Cek: A − L − E (harus 0)"], 1, 0],
+          ["Cek A−L−E 2027", lab["Cek: A − L − E (harus 0)"], 2, 0],
+          ["Cek A−L−E 2028", lab["Cek: A − L − E (harus 0)"], 3, 0],
+        ];
+        // sel nilai tunggal (TV/EV/ekuitas/saham): cari di kolom B–D baris label
+        const single = (label)=>{
+          const i = lab[label]; if(i===undefined) return NaN;
+          for(const c of [1,2,3]){ const v = num(rows[i][c]); if(!isNaN(v)) return v; }
+          return NaN;
+        };
+        checks.push(["Enterprise value (DCF)", null, null, 192388.65, single("Enterprise value (DCF)")]);
+        checks.push(["Nilai per saham", null, null, 3547.77, single("Nilai per saham")]);
+        let ok = 0, h = "<table class='case'>";
+        checks.forEach(c=>{
+          const [name, ri, ci, exp, pre] = c;
+          const got = (pre!==undefined) ? pre : (ri===undefined ? NaN : num(rows[ri][ci]));
+          const tol = (exp===0) ? TOL_BAL : Math.max(TOL, Math.abs(exp)*0.0005);
+          const pass = !isNaN(got) && Math.abs(got-exp) <= tol;
+          if(pass) ok++;
+          h += `<tr><td>${name}</td><td>${isNaN(got)?"—":got.toLocaleString('id-ID')}</td><td>${pass?"✅":"❌"}</td></tr>`;
+        });
+        h += `</table><p><strong>${ok}/${checks.length}</strong> sel kunci cocok.${ok===checks.length?" 🎉 Output cocok! (checker hanya memverifikasi angka, bukan rumus.)":" Periksa sel bertanda ❌."}</p>`;
+        out.innerHTML = h;
+      }catch(err){ out.innerHTML = "⚠️ Gagal membaca file: " + String(err).slice(0,120); }
+    };
+    rd.readAsArrayBuffer(inp.files[0]);
+  });
+}
+function tick(){
+  const left = deadline-Date.now();
+  timerEl.textContent = fmt(left);
+  timerEl.classList.toggle('danger', left<10*60000);
+  if(left<=0){ submit(true); }
+}
+function renderQ(){
+  const qi = order[cur], q = QS[qi];
+  const optOrder = q._oo || (q._oo = shuffle(q.o.map((_,i)=>i)));
+  let h = `<div class="card">
+    <span class="tag">${q.t}${q.case?" · Studi Kasus":""}</span>
+    <div class="prog"><div style="width:${Math.round(cur/QS.length*100)}%"></div></div>
+    <p class="small">Soal ${cur+1} dari ${QS.length}</p>
+    <h2 style="font-size:1.15rem">${q.q}</h2>`;
+  if(q.case===true){
+    h += q.exhibit || `<table class="case"><tr><th>PT Maju Bersama (Rp juta)</th><th>2023</th><th>2024</th></tr>
+    <tr><td>Pendapatan</td><td>10.000</td><td>12.000</td></tr>
+    <tr><td>HPP</td><td>6.000</td><td>7.800</td></tr>
+    <tr><td>Beban operasi</td><td>2.000</td><td>2.200</td></tr></table>`;
+  }
+  optOrder.forEach(oi=>{
+    h += `<button class="opt ${ans[qi]===oi?'sel':''}" onclick="pick(${oi})">${String.fromCharCode(65+optOrder.indexOf(oi))}. ${q.o[oi]}</button>`;
+  });
+  h += `<div class="nav">
+    <button class="btn ghost" onclick="go(-1)" ${cur===0?'disabled':''}>← Kembali</button>
+    <button class="flag ${flagged.has(qi)?'on':''}" onclick="flag()">⚑ ${flagged.has(qi)?'Ditandai':'Tandai ragu'}</button>
+    <button class="btn" onclick="go(1)" ${cur===QS.length-1?'disabled':''}>Lanjut →</button>
+  </div>
+  <button class="btn ghost" onclick="overview()">Peta Soal</button>
+  <button class="btn acc" onclick="submit(false)">Selesai &amp; Nilai</button></div>`;
+  app.innerHTML = h;
+  window.scrollTo(0,0);
+}
+function pick(oi){ ans[order[cur]] = oi; renderQ(); }
+function go(d){ cur=Math.min(QS.length-1,Math.max(0,cur+d)); renderQ(); }
+function flag(){ const qi=order[cur]; flagged.has(qi)?flagged.delete(qi):flagged.add(qi); renderQ(); }
+function overview(){
+  let h = `<div class="card"><h2>Peta Soal</h2><div class="grid">`;
+  order.forEach((qi,i)=>{
+    h += `<div class="cell ${i===cur?'cur':''} ${ans[qi]!==undefined?'done':''} ${flagged.has(qi)?'flagged':''}" onclick="cur=${i};renderQ()">${i+1}</div>`;
+  });
+  h += `</div><button class="btn" onclick="renderQ()">Kembali</button>
+  <button class="btn acc" onclick="submit(false)">Selesai &amp; Nilai</button></div>`;
+  app.innerHTML = h;
+}
+function submit(auto){
+  if(submitted) return;
+  if(!auto){
+    const un = order.filter(qi=>ans[qi]===undefined).length;
+    if(un>0 && !confirm(un+" soal belum dijawab. Tetap selesai?")) return;
+  }
+  submitted=true; clearInterval(timerInt); timerEl.style.display='none';
+  let correct=0; const byTopic={};
+  order.forEach(qi=>{
+    const q=QS[qi], ok = ans[qi]===q.a;
+    if(ok) correct++;
+    byTopic[q.t]=byTopic[q.t]||{c:0,n:0};
+    byTopic[q.t].n++; if(ok) byTopic[q.t].c++;
+  });
+  const score = Math.round(correct/QS.length*100);
+  const _bk = QS_MODE==='case' ? 'fmva_case_best' : 'fmva_sim_best';
+  const best = +(_bk?localStorage.getItem(_bk):0);
+  if(score>best) localStorage.setItem(_bk,score);
+  let h = `<div class="card" style="text-align:center">
+    <p class="small">${auto?"Waktu habis — otomatis dinilai":"Ujian selesai"}</p>
+    <div class="score ${score>=PASS_MARK?'pass':'fail'}">${score}%</div>
+    <p><strong class="${score>=PASS_MARK?'pass':'fail'}">${score>=PASS_MARK?"LULUS 🎉":"BELUM LULUS"}</strong> — benar ${correct} dari ${QS.length} (syarat ${PASS_MARK}%)</p>
+    <h3 style="text-align:left">Bedah per topik</h3><table class="case">`;
+  Object.entries(byTopic).forEach(([t,v])=>{
+    const p=Math.round(v.c/v.n*100);
+    h+=`<tr><td>${t}</td><td>${v.c}/${v.n}</td><td>${p}% ${p<70?"⚠️":""}</td></tr>`;
+  });
+  h += `</table><p class="small">Fokuskan belajar berikutnya ke topik bertanda ⚠️.</p>
+    <button class="btn" onclick="review()">Lihat Pembahasan</button>
+    <button class="btn acc" onclick="startExam()">Ulangi (soal diacak)</button></div>`;
+  app.innerHTML=h; window.scrollTo(0,0);
+}
+function review(){
+  let h = `<div class="card"><h2>Pembahasan</h2>`;
+  order.forEach((qi,i)=>{
+    const q=QS[qi], my=ans[qi], ok=my===q.a;
+    const oo=q._oo || (q._oo = shuffle(q.o.map((_,i)=>i)));
+    h += `<p><strong>${i+1}. [${q.t}]</strong> ${q.q}</p>`;
+    oo.forEach(oi=>{
+      const cls = oi===q.a?'review-correct':(oi===my?'review-wrong':'');
+      h += `<div class="opt ${cls}" style="cursor:default">${String.fromCharCode(65+oo.indexOf(oi))}. ${q.o[oi]}${oi===my&&!ok?" ← jawabanmu":""}</div>`;
+    });
+    h += `<div class="exp"><strong>Pembahasan:</strong> ${q.e}</div><hr style="border:0;border-top:1px solid var(--line)">`;
+  });
+  h += `<button class="btn acc" onclick="startExam()">Ulangi Ujian</button></div>`;
+  app.innerHTML=h; window.scrollTo(0,0);
+}
+startScreen();
+</script>
+</body>
+</html>
