@@ -41,7 +41,7 @@
   .cell{border:1px solid var(--line);border-radius:8px;padding:8px 0;text-align:center;cursor:pointer;font-size:.85rem;background:#fff}
   .cell.done{background:#dbeafe}.cell.flagged{border-color:var(--acc);color:var(--acc);font-weight:700}.cell.cur{outline:2px solid var(--ink)}
   .score{font-size:3rem;font-weight:800}.pass{color:var(--ok)}.fail{color:var(--bad)}
-  .small{color:var(--muted);font-size:.9rem}.exp{background:#f8fafc;border-left:4px solid var(--acc);padding:10px 14px;margin:10px 0;border-radius:0 8px 8px 0}
+  .small{color:var(--muted);font-size:.9rem}.glink{color:var(--acc);text-decoration:underline dotted;cursor:pointer}.exp{background:#f8fafc;border-left:4px solid var(--acc);padding:10px 14px;margin:10px 0;border-radius:0 8px 8px 0}
   table.case.left td,table.case.left th{text-align:left}
   footer{color:var(--muted);font-size:.8rem;text-align:center;padding:24px}
 </style>
@@ -234,24 +234,32 @@ function startScreen(){
 }
 /* Peta tujuan belajar (gap Kelontong): kemampuan apa yang diuji tiap bagian.
    Jumlah soal dihitung dari bank soal di file ini (60 MCQ + 10 soal Studi Kasus Excel). */
+/* Lompat ke entri Glosarium tertentu (dipakai tautan ⋯ di Peta Tujuan). */
+function gloss(id){
+  showGlossary();
+  const el = document.getElementById(id);
+  if(el) el.scrollIntoView({block:'center'});
+}
 function showObjectives(){
   app.innerHTML = `<div class="card">
     <span class="tag">Referensi · tidak dinilai</span>
     <h2>Peta Tujuan Belajar</h2>
     <p>Apa yang diuji tiap bagian — supaya kamu tahu kemampuan mana yang sedang dilatih, dan topik mana yang perlu diulang setelah melihat "Bedah per topik" di hasil ujian.</p>
+    <p class="small">Istilah bertanda ⋯ dijelaskan di Glosarium — klik istilahnya untuk langsung ke definisinya.</p>
     <table class="case left">
-      <tr><th>Bagian</th><th>Soal</th><th>Kemampuan yang diuji</th></tr>
-      <tr><td>Financial Modeling</td><td>14</td><td>Merangkai 3-statement model yang saling ter-link (bunga dari debt schedule, laba ditahan, balance-check); mengenali dan menangani circularity; memisahkan area input/asumsi dari rumus; menghitung FCFF, DSO, dan ΔNWC; forecasting berbasis driver; analisis sensitivitas dengan Data Table; konvensi mid-year.</td></tr>
-      <tr><td>Valuation</td><td>14</td><td>Menghitung EV dan equity value lewat jembatan net debt; WACC (termasuk biaya utang setelah pajak) dan CAPM; DCF dan terminal value (Gordon growth); valuasi comps (EV/EBITDA) dan precedent transactions (control premium); membedakan FCFF dan FCFE; membaca sensitivitas valuasi terhadap WACC.</td></tr>
+      <tr><th>Bagian</th><th>Jumlah soal</th><th>Kemampuan yang diuji</th></tr>
+      <tr><td>Financial Modeling</td><td>14</td><td>Merangkai 3-statement model yang saling ter-link (bunga dari debt schedule, laba ditahan, balance-check); mengenali dan menangani circularity; memisahkan area input/asumsi dari rumus; menghitung <a class="glink" href="#" onclick="gloss('g-fcff');return false">FCFF ⋯</a>, <a class="glink" href="#" onclick="gloss('g-dso');return false">DSO ⋯</a>, dan <a class="glink" href="#" onclick="gloss('g-dnwc');return false">ΔNWC ⋯</a>; forecasting berbasis driver; analisis sensitivitas dengan Data Table; konvensi <a class="glink" href="#" onclick="gloss('g-midyear');return false">mid-year ⋯</a>.</td></tr>
+      <tr><td>Valuation</td><td>14</td><td>Menghitung EV dan equity value lewat jembatan net debt; WACC (termasuk biaya utang setelah pajak) dan CAPM; DCF dan terminal value (Gordon growth); valuasi comps (EV/EBITDA) dan precedent transactions (control premium); membedakan <a class="glink" href="#" onclick="gloss('g-fcff');return false">FCFF ⋯</a> dan <a class="glink" href="#" onclick="gloss('g-fcfe');return false">FCFE ⋯</a>; membaca sensitivitas valuasi terhadap <a class="glink" href="#" onclick="gloss('g-wacc');return false">WACC ⋯</a>.</td></tr>
       <tr><td>Finance</td><td>5</td><td>Memilih proyek dengan NPV vs IRR; menilai kelemahan payback period; membedakan risiko sistematis dan risiko spesifik perusahaan; memakai tingkat diskonto yang disesuaikan risiko; membedakan dividen saham preferen dan bunga obligasi.</td></tr>
       <tr><td>Accounting</td><td>5</td><td>Menerapkan basis akrual dan prinsip matching; membaca dampak piutang terhadap arus kas operasi; menghitung depresiasi garis lurus (termasuk nilai sisa); memahami dampak IFRS 16 terhadap EBITDA.</td></tr>
-      <tr><td>Excel</td><td>5</td><td>Memilih XNPV/XIRR untuk arus kas bertanggal; lookup dua arah yang tahan terhadap insert kolom (INDEX-MATCH, XLOOKUP); menjumlahkan dengan banyak syarat (SUMIFS).</td></tr>
+      <tr><td>Excel</td><td>5</td><td>Memilih <a class="glink" href="#" onclick="gloss('g-xnpv');return false">XNPV/XIRR ⋯</a> untuk arus kas bertanggal; lookup dua arah yang tahan terhadap insert kolom (INDEX-MATCH, XLOOKUP); menjumlahkan dengan banyak syarat (SUMIFS).</td></tr>
       <tr><td>Budgeting &amp; Forecasting</td><td>2</td><td>Menilai variance beban (favorable/unfavorable); memahami rolling forecast 4 kuartal.</td></tr>
       <tr><td>Presentation &amp; Visuals</td><td>2</td><td>Memilih chart untuk tren komposisi (stacked bar/area) dan variance walk (waterfall/bridge).</td></tr>
-      <tr><td>Case Study (mini)</td><td>13</td><td>PT Maju Bersama (3 soal): margin dan pertumbuhan dari laporan keuangan. PT Sinar Abadi (5 soal): DCF-lite lengkap — FCFF, WACC, EV, equity value, nilai per saham. PT Maju Jaya (5 soal): comps, precedent, football field, premi akuisisi, dan tata kelola pemakaian AI.</td></tr>
-      <tr><td>Studi Kasus Excel — PT Cahaya Timur</td><td>10</td><td>Membangun model 3-statement dan DCF dari nol di Google Sheets (90 menit): Income Statement → NWC schedule → Balance Sheet → Cash Flow → FCFF dan DCF; lalu menjawab 10 soal dari model sendiri — termasuk sensitivitas WACC dan DSO/DPO.</td></tr>
+      <tr><td>Case Study (mini)</td><td>13</td><td>PT Maju Bersama (3 soal): margin dan pertumbuhan dari laporan keuangan. PT Sinar Abadi (5 soal): DCF-lite lengkap — FCFF, WACC, EV, equity value, nilai per saham. PT Maju Jaya (5 soal): comps, precedent, <a class="glink" href="#" onclick="gloss('g-football');return false">football field ⋯</a>, premi akuisisi, dan tata kelola pemakaian AI.</td></tr>
+      <tr><td>Studi Kasus Excel — PT Cahaya Timur</td><td>10</td><td>Membangun model 3-statement dan DCF dari nol di Google Sheets (90 menit): Income Statement → NWC schedule → Balance Sheet → Cash Flow → FCFF dan DCF; lalu menjawab 10 soal dari model sendiri — termasuk sensitivitas <a class="glink" href="#" onclick="gloss('g-wacc');return false">WACC ⋯</a> dan <a class="glink" href="#" onclick="gloss('g-dso');return false">DSO ⋯</a>/<a class="glink" href="#" onclick="gloss('g-dpo');return false">DPO ⋯</a>.</td></tr>
     </table>
-    <p class="small">Lulus = 70%. Soal diacak tiap percobaan; pembahasan tiap soal tampil setelah submit (tombol "Lihat Pembahasan"). Peta ini hanya menjelaskan apa yang diuji — soal dan kunci tidak berubah.</p>
+    <p class="small">Pengulangan disengaja (penguatan): FCFF dihitung di Financial Modeling lalu dipakai lagi di Valuation; sensitivitas WACC dan DSO/DPO muncul lagi di Studi Kasus Excel — topik yang sama diuji dari sudut berbeda, bukan duplikasi soal.</p>
+    <p class="small">Lulus = 70%. Soal diacak tiap percobaan; pembahasan tiap soal tampil setelah submit (tombol "Lihat Pembahasan"). "Bedah per topik" muncul di layar hasil setelah ujian selesai (tombol "Selesai &amp; Nilai" → tabel "Bedah per topik" per bagian; topik di bawah 70% bertanda ⚠️). Peta ini hanya menjelaskan apa yang diuji — soal dan kunci tidak berubah.</p>
     <button class="btn" onclick="startScreen()">← Kembali</button>
   </div>`;
   window.scrollTo(0,0);
@@ -288,7 +296,7 @@ function showGlossary(){
       <tr><td>≈</td><td>Kira-kira sama dengan</td><td>30,4 hari ≈ 30 hari</td></tr>
       <tr><td>≥</td><td>Lebih dari atau sama dengan</td><td>Lulus bila skor ≥ 70%</td></tr>
       <tr><td>≤</td><td>Kurang dari atau sama dengan</td><td>Nilai kini ≤ nilai wajar</td></tr>
-      <tr><td>Δ (delta)</td><td>Perubahan</td><td>ΔNWC = perubahan modal kerja bersih</td></tr>
+      <tr id="g-dnwc"><td>Δ (delta)</td><td>Perubahan</td><td>ΔNWC = perubahan modal kerja bersih</td></tr>
     </table>
     <h3>Singkatan</h3>
     <table class="case left">
@@ -297,13 +305,13 @@ function showGlossary(){
       <tr><td>CFO</td><td>Cash Flow from Operations</td><td>Arus kas operasi</td></tr>
       <tr><td>D&amp;A</td><td>Depreciation &amp; Amortisation</td><td>Depresiasi dan amortisasi</td></tr>
       <tr><td>DCF</td><td>Discounted Cash Flow</td><td>Valuasi dengan mendiskonto arus kas masa depan</td></tr>
-      <tr><td>DPO</td><td>Days Payables Outstanding</td><td>Rata-rata hari melunasi utang usaha</td></tr>
-      <tr><td>DSO</td><td>Days Sales Outstanding</td><td>Rata-rata hari menagih piutang</td></tr>
+      <tr id="g-dpo"><td>DPO</td><td>Days Payables Outstanding</td><td>Rata-rata hari melunasi utang usaha</td></tr>
+      <tr id="g-dso"><td>DSO</td><td>Days Sales Outstanding</td><td>Rata-rata hari menagih piutang</td></tr>
       <tr><td>EBIT</td><td>Earnings Before Interest and Taxes</td><td>Laba sebelum bunga dan pajak</td></tr>
       <tr><td>EBITDA</td><td>Earnings Before Interest, Taxes, Depreciation and Amortisation</td><td>Laba sebelum bunga, pajak, depresiasi, dan amortisasi</td></tr>
       <tr><td>EV</td><td>Enterprise Value</td><td>Nilai perusahaan (ekuitas + net debt)</td></tr>
-      <tr><td>FCFE</td><td>Free Cash Flow to Equity</td><td>Kas bebas untuk pemegang saham</td></tr>
-      <tr><td>FCFF</td><td>Free Cash Flow to Firm</td><td>Kas bebas untuk semua investor (utang + ekuitas)</td></tr>
+      <tr id="g-fcfe"><td>FCFE</td><td>Free Cash Flow to Equity</td><td>Kas bebas untuk pemegang saham</td></tr>
+      <tr id="g-fcff"><td>FCFF</td><td>Free Cash Flow to Firm</td><td>Kas bebas untuk semua investor (utang + ekuitas)</td></tr>
       <tr><td>g</td><td>growth</td><td>Tingkat pertumbuhan perpetuitas (dipakai di rumus terminal value)</td></tr>
       <tr><td>HPP</td><td>Harga Pokok Penjualan</td><td>Biaya langsung menghasilkan penjualan</td></tr>
       <tr><td>IRR</td><td>Internal Rate of Return</td><td>Tingkat diskonto yang membuat NPV = 0</td></tr>
@@ -315,9 +323,11 @@ function showGlossary(){
       <tr><td>PP&amp;E</td><td>Property, Plant &amp; Equipment</td><td>Aset tetap (tanah, bangunan, mesin)</td></tr>
       <tr><td>Rf</td><td>Risk-free rate</td><td>Tingkat return aset bebas risiko</td></tr>
       <tr><td>TV</td><td>Terminal Value</td><td>Nilai terminal (nilai arus kas setelah periode proyeksi)</td></tr>
-      <tr><td>WACC</td><td>Weighted Average Cost of Capital</td><td>Biaya modal rata-rata tertimbang</td></tr>
-      <tr><td>XIRR</td><td>Extended IRR</td><td>IRR dengan tanggal aktual tiap arus kas</td></tr>
-      <tr><td>XNPV</td><td>Extended NPV</td><td>NPV dengan tanggal aktual tiap arus kas</td></tr>
+      <tr id="g-wacc"><td>WACC</td><td>Weighted Average Cost of Capital</td><td>Biaya modal rata-rata tertimbang</td></tr>
+      <tr id="g-football"><td>Football field</td><td>Football Field Valuation</td><td>Rentang valuasi (min–max) dari beberapa metode — DCF, comps, precedent — dalam satu gambar</td></tr>
+      <tr id="g-midyear"><td>Mid-year</td><td>Mid-year discounting</td><td>Konvensi DCF: arus kas diterima merata sepanjang tahun, jadi didiskon setengah periode lebih awal</td></tr>
+      <tr id="g-xirr"><td>XIRR</td><td>Extended IRR</td><td>IRR dengan tanggal aktual tiap arus kas</td></tr>
+      <tr id="g-xnpv"><td>XNPV</td><td>Extended NPV</td><td>NPV dengan tanggal aktual tiap arus kas</td></tr>
     </table>
     <h3>Fungsi Excel yang disebut di soal</h3>
     <table class="case left">
