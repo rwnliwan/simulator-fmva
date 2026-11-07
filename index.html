@@ -82,20 +82,20 @@
     <button class="btn ghost" onclick="closeSubmitModal()">Lanjutkan menjawab · <span lang="en">Keep answering</span></button>
   </div>
 </div>
-<footer>Latihan format &amp; kecepatan · Bukan soal asli CFI · Lulus = 70%</footer>
+<footer>Latihan format &amp; kecepatan · Bukan soal asli CFI · Lulus = 70% · Satuan: Rp M = Rp miliar</footer>
 <script>
 const PASS_MARK = 70;
 // Durasi: 60 soal × 3 mnt = 180 menit (latihan kustom — format resmi CFI kini 50 MCQ termasuk Excel case, 3 jam)
 const DURATION_MIN = 180;
 // Exhibit HTML per kelompok studi kasus (SIM-2 fix: tiap soal case menampilkan tabel yang sesuai angkanya)
-const EX_SINAR = `<table class="case"><tr><th>PT Sinar Abadi (Rp M)</th><th>Nilai</th></tr>
+const EX_SINAR = `<table class="case"><tr><th>PT Sinar Abadi (Rp miliar)</th><th>Nilai</th></tr>
 <tr><td>Pendapatan</td><td>500</td></tr><tr><td>Margin EBITDA</td><td>20%</td></tr>
 <tr><td>D&amp;A</td><td>20</td></tr><tr><td>Pajak</td><td>25%</td></tr>
 <tr><td>Capex</td><td>30</td></tr><tr><td>Kenaikan NWC</td><td>10</td></tr>
 <tr><td>Ekuitas (Ke 12%)</td><td>700</td></tr><tr><td>Utang (Kd 8%)</td><td>300</td></tr>
 <tr><td>g (pertumbuhan perpetuitas)</td><td>3%</td></tr>
 <tr><td>Net debt</td><td>150</td></tr><tr><td>Saham beredar</td><td>100 juta</td></tr></table>`;
-const EX_MJAYA = `<table class="case"><tr><th>PT Maju Jaya — Akuisisi (Rp M)</th><th>Nilai</th></tr>
+const EX_MJAYA = `<table class="case"><tr><th>PT Maju Jaya — Akuisisi (Rp miliar)</th><th>Nilai</th></tr>
 <tr><td>EBITDA</td><td>80</td></tr><tr><td>Median EV/EBITDA (trading comps)</td><td>6,0&times;</td></tr>
 <tr><td>Median EV/EBITDA (precedent)</td><td>7,5&times;</td></tr>
 <tr><td>EV hasil DCF</td><td>520</td></tr><tr><td>Net debt</td><td>60</td></tr>
@@ -167,16 +167,16 @@ const Q = [
 // ===== PRESENTATION & VISUALS (+1 → total 2) =====
  {t:"Presentation & Visuals",q:"Menjelaskan jembatan dari laba tahun lalu ke laba tahun ini (efek harga, volume, biaya): chart terbaik?",o:["Pie chart","Waterfall (bridge) chart","Scatter plot","Heatmap"],a:1,e:"Waterfall menunjukkan tiap pendorong penambah/pengurang sampai nilai akhir — standar untuk variance walk."},
 // ===== CASE STUDY A — PT Sinar Abadi: DCF-lite 5 bagian =====
- {t:"Case Study",case:true,exhibit:EX_SINAR,q:"Kasus PT Sinar Abadi (Rp M): pendapatan 500, margin EBITDA 20%, D&A 20, pajak 25%, capex 30, kenaikan NWC 10. Berapa FCFF?",o:["Rp40 M","Rp60 M","Rp80 M","Rp30 M"],a:0,e:"EBITDA 100 − D&A 20 = EBIT 80; NOPAT = 80×0,75 = 60; FCFF = 60 + 20 − 30 − 10 = 40."},
+ {t:"Case Study",case:true,exhibit:EX_SINAR,q:"Kasus PT Sinar Abadi (Rp miliar): pendapatan 500, margin EBITDA 20%, D&A 20, pajak 25%, capex 30, kenaikan NWC 10. Berapa FCFF?",o:["Rp40 M","Rp60 M","Rp80 M","Rp30 M"],a:0,e:"EBITDA 100 − D&A 20 = EBIT 80; NOPAT = 80×0,75 = 60; FCFF = 60 + 20 − 30 − 10 = 40."},
  {t:"Case Study",case:true,exhibit:EX_SINAR,q:"Kasus yang sama — ekuitas 700 (Ke 12%), utang 300 (Kd 8%), pajak 25%. Berapa WACC?",o:["10,2%","11,0%","9,6%","12,0%"],a:0,e:"0,7×12% + 0,3×8%×0,75 = 8,4 + 1,8 = 10,2%."},
  {t:"Case Study",case:true,exhibit:EX_SINAR,q:"Kasus yang sama — FCF Rp40 M tumbuh 3% selamanya. Berapa enterprise value?",o:["Rp572 M","Rp556 M","Rp392 M","Rp1.333 M"],a:0,e:"EV = 40×1,03/(0,102−0,03) = 41,2/0,072 ≈ 572. Jebakan umum: lupa menumbuhkan pembilang (dapat 556)."},
  {t:"Case Study",case:true,exhibit:EX_SINAR,q:"Kasus yang sama — net debt Rp150 M. Berapa equity value?",o:["Rp422 M","Rp572 M","Rp722 M","Rp272 M"],a:0,e:"Equity value = EV − net debt = 572 − 150 = 422."},
  {t:"Case Study",case:true,exhibit:EX_SINAR,q:"Kasus yang sama — 100 juta saham beredar. Nilai wajar per saham?",o:["Rp4.220","Rp5.720","Rp4.020","Rp2.720"],a:0,e:"422 M ÷ 100 jt saham = Rp4.220 per saham."},
 // ===== CASE STUDY B — Akuisisi PT Maju Jaya: comps + precedent + football field + AI governance =====
- {t:"Case Study",case:true,exhibit:EX_MJAYA,q:"Kasus akuisisi PT Maju Jaya (Rp M): EBITDA 80; median EV/EBITDA comps 6,0×. Implied EV dari trading comps?",o:["Rp480 M","Rp13,3 M","Rp86 M","Rp74 M"],a:0,e:"6,0 × 80 = 480."},
+ {t:"Case Study",case:true,exhibit:EX_MJAYA,q:"Kasus akuisisi PT Maju Jaya (Rp miliar): EBITDA 80; median EV/EBITDA comps 6,0×. Implied EV dari trading comps?",o:["Rp480 M","Rp13,3 M","Rp86 M","Rp74 M"],a:0,e:"6,0 × 80 = 480."},
  {t:"Case Study",case:true,exhibit:EX_MJAYA,q:"Kasus yang sama — median precedent transactions 7,5×. Implied EV?",o:["Rp600 M","Rp480 M","Rp520 M","Rp10,7 M"],a:0,e:"7,5 × 80 = 600. Lebih tinggi dari comps karena harga akuisisi mencakup control premium."},
  {t:"Case Study",case:true,exhibit:EX_MJAYA,q:"Kasus yang sama — ditambah hasil DCF: EV 520. Berapa rentang football field?",o:["Rp480–600 M","Rp480–520 M","Rp520–600 M","Rp420–540 M"],a:0,e:"Min–max dari {480, 600, 520} = 480–600. Football field memetakan sebaran hasil antar-metode."},
- {t:"Case Study",case:true,exhibit:EX_MJAYA,q:"Kasus yang sama — net debt Rp60 M. Tawaran Rp550 M untuk ekuitas berarti premi berapa vs nilai comps-implied?",o:["≈31%","≈15%","≈8%","Diskon 10%"],a:0,e:"Ekuitas comps-implied = 480 − 60 = 420. (550−420)/420 ≈ 31% — di atas rentang comps, di bawah precedent."},
+ {t:"Case Study",case:true,exhibit:EX_MJAYA,q:"Kasus yang sama — net debt Rp60 M. Tawaran Rp550 M untuk ekuitas berarti premi berapa vs nilai comps-implied?",o:["≈31%","≈15%","≈8%","Diskon 10%"],a:0,e:"Ekuitas comps-implied = 480 − 60 = 420. (550−420)/420 ≈ 31% — di atas rentang comps, di atas precedent (ekuitas precedent = 600 − 60 = 540; premi precedent (540−420)/420 ≈ 29%)."},
  {t:"Case Study",case:true,exhibit:EX_MJAYA,q:"Kasus yang sama — model akuisisi ini disusun dengan bantuan AI. Kontrol tata kelola (governance) yang WAJIB?",o:["Percaya output AI bila terlihat rapi","Manusia memverifikasi tiap asumsi & angka; AI tidak memvonis","Rahasiakan pemakaian AI dari komite","Minta AI yang sama memverifikasi dirinya"],a:1,e:"AI boleh membangun cepat, tapi keputusan tetap manusia — verifikasi independen tiap input. Prinsipnya: bukan AI menilai AI."},
 ];
 // ===== STUDI KASUS EXCEL 1 — PT Cahaya Timur (distributor consumer goods, Rp juta) =====
@@ -184,7 +184,7 @@ const Q = [
 const CASE_Q = [
  {t:"Studi Kasus Excel",case:"excel",q:"Dari modelmu: berapa Pendapatan PT Cahaya Timur tahun 2026?",o:["Rp151.800 juta","Rp138.000 juta","Rp165.600 juta","Rp150.000 juta"],a:0,e:"138.000 × (1 + 10%) = 151.800. Jebakan: 138.000 (lupa growth), 165.600 (growth 20%)."},
  {t:"Studi Kasus Excel",case:"excel",q:"Berapa EBIT 2026?",o:["Rp22.860 juta","Rp30.360 juta","Rp20.860 juta","Rp17.830,8 juta"],a:0,e:"151.800 − 61%×151.800 (HPP) − 19%×151.800 (opex) − 7.500 (D&A) = 22.860. 30.360 = EBITDA (lupa kurangi D&A); 17.830,8 = NOPAT (sudah kena pajak 22%)."},
- {t:"Studi Kasus Excel",case:"excel",q:"Berapa Arus kas operasi (CFO) 2026?",o:["Rp21.286,8 juta","Rp23.770,8 juta","Rp26.254,8 juta","Rp13.846,8 juta"],a:0,e:"16.270,8 + 7.500 − 2.484 = 21.286,8. ΔNWC = 18%×151.800 − 18%×138.000 = 2.484. 13.846,8 = FCFF (sudah dikurangi capex) — bukan CFO."},
+ {t:"Studi Kasus Excel",case:"excel",q:"Berapa Arus kas operasi (CFO) 2026?",o:["Rp21.286,8 juta","Rp23.770,8 juta","Rp26.254,8 juta","Rp13.846,8 juta"],a:0,e:"16.270,8 = laba bersih (NOPAT 17.830,8 − bunga setelah pajak 2.000×0,78 = 1.560). Lalu + D&A 7.500 − ΔNWC 2.484 = 21.286,8. ΔNWC = 18%×151.800 − 18%×138.000 = 2.484. 13.846,8 = FCFF (sudah dikurangi capex) — bukan CFO."},
  {t:"Studi Kasus Excel",case:"excel",q:"Berapa FCFF 2027?",o:["Rp15.576,48 juta","Rp18.308,88 juta","Rp23.516,48 juta","Rp14.016,48 juta"],a:0,e:"NOPAT 2027 + D&A − capex − ΔNWC = 15.576,48. 23.516,48 = CFO (lupa capex); 14.016,48 = memakai NI bukan NOPAT sebagai basis."},
  {t:"Studi Kasus Excel",case:"excel",q:"Berapa NWC akhir 2028 (level, bukan perubahan)?",o:["Rp33.062,04 juta","Rp30.056,40 juta","Rp3.005,64 juta","Rp49.593,06 juta"],a:0,e:"18% × 183.678 (revenue 2028) = 33.062,04. 3.005,64 = ΔNWC 2028 — itu perubahannya, bukan levelnya."},
  {t:"Studi Kasus Excel",case:"excel",q:"Berapa Kas akhir 2028?",o:["Rp52.261,41 juta","Rp36.303,28 juta","Rp15.958,13 juta","Rp67.261,41 juta"],a:0,e:"Kas 2025 + akumulasi ΔKas 2026–2028 = 52.261,41. 36.303,28 = kas akhir 2027; 15.958,13 = Δkas 2028 saja."},
