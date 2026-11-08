@@ -99,7 +99,7 @@ const EX_SINAR = `<table class="case"><tr><th>PT Sinar Abadi (Rp miliar)</th><th
 const EX_MJAYA = `<table class="case"><tr><th>PT Maju Jaya — Akuisisi (Rp miliar)</th><th>Nilai</th></tr>
 <tr><td>EBITDA</td><td>80</td></tr><tr><td>Median EV/EBITDA (trading comps)</td><td>6,0&times;</td></tr>
 <tr><td>Median EV/EBITDA (precedent)</td><td>7,5&times;</td></tr>
-<tr><td>EV hasil DCF</td><td>520</td></tr><tr><td>Net debt</td><td>60</td></tr>
+<tr><td>EV hasil DCF (angka ilustratif)</td><td>520</td></tr><tr><td>Net debt</td><td>60</td></tr>
 <tr><td>Tawaran untuk ekuitas</td><td>550</td></tr></table>`;
 const Q = [
  // ===== FINANCIAL MODELING (6) =====
@@ -158,7 +158,7 @@ const Q = [
 // ===== ACCOUNTING (+3 → total 5) =====
  {t:"Accounting",q:"Aset Rp100 jt, umur 5 tahun, nilai sisa Rp10 jt. Beban depresiasi garis lurus per tahun?",o:["Rp18 jt","Rp20 jt","Rp22 jt","Rp10 jt"],a:0,e:"(100−10)/5 = 18. Nilai sisa dikurangkan dulu — kesalahan umum langsung membagi 100/5."},
  {t:"Accounting",q:"Prinsip matching (padanan) mensyaratkan beban diakui…",o:["Saat kas keluar","Bersamaan dengan pendapatan yang dihasilkannya","Di awal tahun","Saat faktur diterima"],a:1,e:"Beban dipadankan dengan pendapatan terkaitnya — fondasi akuntansi akrual, alasan HPP mengikuti penjualan."},
- {t:"Accounting",q:"Di bawah IFRS 16, finance lease (dibanding operating lease cara lama) membuat EBITDA…",o:["Lebih rendah","Lebih tinggi","Tidak berubah","Nol"],a:1,e:"Beban sewa operasi berada di atas EBITDA; finance lease memecahnya jadi beban bunga + depresiasi (di bawah EBITDA) → EBITDA naik, utang tercatat naik."},
+ {t:"Accounting",q:"Di bawah IFRS 16, sewa yang dulu operating lease (off-balance-sheet) kini diakui sebagai aset hak-guna dan liabilitas sewa, dan beban sewanya diganti depresiasi + bunga. Dampaknya ke EBITDA (dibanding cara lama)…",o:["Lebih rendah","Lebih tinggi","Tidak berubah","Nol"],a:1,e:"Beban sewa operasi berada di atas EBITDA; finance lease memecahnya jadi beban bunga + depresiasi (di bawah EBITDA) → EBITDA naik, utang tercatat naik."},
 // ===== EXCEL (+3 → total 5) =====
  {t:"Excel",q:"IRR mengasumsikan arus kas periodik beraturan; untuk tanggal yang tak beraturan gunakan…",o:["NPV","XIRR","PMT","RATE"],a:1,e:"XIRR mendiskonto per tanggal aktual tiap arus kas. Wajib untuk arus kas nyata yang tanggalnya acak."},
  {t:"Excel",q:"Menjumlahkan penjualan dengan DUA syarat (wilayah = Timur DAN bulan = Jan):",o:["SUMIF","SUMIFS","COUNTIF","SUMPRODUCT saja"],a:1,e:"SUMIFS = multi-kriteria. SUMIF hanya menangani satu syarat."},
@@ -274,9 +274,9 @@ function showGlossary(){
     <h3>Satuan uang</h3>
     <table class="case left">
       <tr><th>Notasi</th><th>Arti</th><th>Dipakai di</th></tr>
-      <tr><td>Rp miliar</td><td>Rp1.000.000.000 (satu miliar rupiah)</td><td>Semua exhibit dan soal MCQ</td></tr>
+      <tr><td>Rp miliar</td><td>Rp1.000.000.000 (satu miliar rupiah)</td><td>Exhibit studi kasus dan sebagian besar soal MCQ (soal yang memakai Rp juta menyebutkannya eksplisit di teks soal)</td></tr>
       <tr><td>Rp M</td><td>Sama dengan Rp miliar (singkatan lama) — lihat footer halaman: "Satuan: Rp M = Rp miliar"</td><td>Footer halaman ini</td></tr>
-      <tr><td>Rp juta</td><td>Rp1.000.000 (satu juta rupiah)</td><td>Studi Kasus Excel (PT Cahaya Timur) dan PT Maju Bersama</td></tr>
+      <tr><td>Rp juta</td><td>Rp1.000.000 (satu juta rupiah)</td><td>Studi Kasus Excel (PT Cahaya Timur), PT Maju Bersama, dan beberapa soal MCQ yang menyebut Rp jt/Rp juta di teks soal</td></tr>
       <tr><td>Rp</td><td>Rupiah, tanpa pengali</td><td>Nilai per saham dan harga satuan</td></tr>
     </table>
     <p class="small">Di Studi Kasus Excel, semua angka dalam Rp juta — jadi jawaban "25.000" berarti Rp25.000 juta. Jangan tertukar dengan Rp miliar di soal MCQ.</p>
