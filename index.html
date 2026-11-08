@@ -118,7 +118,7 @@ const Q = [
  {t:"Valuation",q:"Manakah yang BUKAN metodologi valuasi utama?",o:["DCF analysis","Comparable company analysis","Precedent transactions","Melihat rasio saja tanpa menghitung nilai"],a:3,e:"Rasio tanpa kesimpulan nilai bukan valuasi. Tiga metode utama: DCF, comps, precedents."},
  // ===== FINANCE (2) =====
  {t:"Finance",q:"Dua proyek mutually exclusive: A NPV lebih tinggi, B IRR lebih tinggi. Pilih…",o:["B (IRR lebih tinggi)","A (NPV lebih tinggi)","Yang payback lebih cepat","Undi"],a:1,e:"NPV mengukur nilai absolut dalam rupiah. IRR bisa menyesatkan karena asumsi reinvestment — juga karena perbedaan skala proyek dan waktu arus kas: proyek kecil bisa ber-IRR tinggi tapi menambah nilai absolut lebih sedikit, dan arus kas yang datang lebih lambat dinilai berbeda oleh kedua ukuran."},
- {t:"Finance",q:"Kelemahan utama payback period?",o:["Sulit dihitung","Mengabaikan time value of money dan arus kas setelah payback","Butuh data terlalu banyak","Tidak bisa untuk proyek rugi"],a:1,e:"Payback mengabaikan kapan uang datang dan apa yang terjadi setelah modal kembali."},
+ {t:"Finance",q:"Kelemahan utama payback period konvensional?",o:["Sulit dihitung","Mengabaikan time value of money dan arus kas setelah payback","Butuh data terlalu banyak","Tidak bisa untuk proyek rugi"],a:1,e:"Payback konvensional mengabaikan time value of money (kapan uang datang) dan arus kas setelah modal kembali. Discounted payback memperbaiki yang pertama — ia mendiskonto arus kas dulu — tetapi tetap mengabaikan arus kas setelah payback."},
  // ===== ACCOUNTING (2) =====
  {t:"Accounting",q:"Dengan basis akrual (accrual), pendapatan diakui saat…",o:["Kas diterima","Jasa/barang diserahkan (earned)","Faktur dicetak","Pelanggan berjanji membayar"],a:1,e:"Akrual: akui saat earned, bukan saat kas masuk. Ini sebabnya laba ≠ kas."},
  {t:"Accounting",q:"Kenaikan piutang usaha (receivable) berdampak ke arus kas operasi…",o:["Menambah","Mengurangi","Tidak berpengaruh","Menambah dua kali"],a:1,e:"Piutang naik = jualan belum jadi kas → penyesuaian negatif di operating cash flow."},
@@ -135,7 +135,7 @@ const Q = [
  {t:"Case Study",case:true,q:"Kasus yang sama — operating profit 2024 vs 2023?",o:["Naik dari 2.000 ke 2.400","Tetap 2.000 (flat)","Turun ke 1.800","Naik ke 2.200"],a:1,e:"2024: 12.000−7.800−2.200 = 2.000. 2023: 10.000−6.000−2.000 = 2.000. Pendapatan naik tapi margin tergerus — temuan analis."},
 // ===== FINANCIAL MODELING (+8 → total 14) =====
  {t:"Financial Modeling",q:"Proyeksi driver-based: tahun ini 12.000 unit × Rp10.000 = Rp120 jt. Tahun depan volume +10%, harga +5%. Pendapatan proyeksi?",o:["Rp138,6 jt","Rp132,0 jt","Rp138,0 jt","Rp126,0 jt"],a:0,e:"13.200 unit × Rp10.500 = Rp138,6 jt. Driver dikali, bukan dijumlah persennya (1,10×1,05=1,155)."},
- {t:"Financial Modeling",q:"Piutang usaha Rp30 jt, pendapatan tahunan Rp360 jt. Days Sales Outstanding (DSO)?",o:["30 hari","12 hari","120 hari","365 hari"],a:0,e:"DSO = 30/360 × 365 ≈ 30 hari. Artinya rata-rata pelanggan membayar 30 hari setelah penjualan. (Catatan konvensi: pendapatan tahunan di sini atas basis 360 hari, sedangkan DSO dinyatakan dalam 365 hari kalender — 30/360 adalah rasio piutang terhadap pendapatan, bukan 30 hari; pencampuran basis ini lazim dipakai dan hasilnya ≈30,4 hari.)"},
+ {t:"Financial Modeling",q:"Piutang usaha Rp30 jt, pendapatan tahunan Rp360 jt. Days Sales Outstanding (DSO)?",o:["30 hari","12 hari","120 hari","365 hari"],a:0,e:"DSO = 30/360 × 365 ≈ 30,4 hari. Artinya rata-rata pelanggan membayar sekitar 30 hari setelah penjualan. (30/360 di sini adalah rasio piutang terhadap pendapatan tahunan — angka 360 adalah nilai pendapatan Rp360 jt, bukan basis 360 hari; DSO dinyatakan dalam 365 hari kalender, jadi 30/360 × 365 ≈ 30,4 hari.)"},
  {t:"Financial Modeling",q:"Untuk melihat bagaimana laba berubah pada 10 nilai asumsi pertumbuhan yang berbeda, tool Excel yang tepat?",o:["Goal Seek","Data Table (What-If Analysis)","PivotTable","VLOOKUP"],a:1,e:"Data Table menjalankan ulang rumus untuk tiap nilai asumsi — inti analisis sensitivitas satu/dua variabel."},
  {t:"Financial Modeling",q:"Biaya Rp50 jt yang memperpanjang umur mesin 5 tahun dicatat sebagai…",o:["Beban operasi tahun berjalan","Capex (dikapitalisasi, disusutkan 5 tahun)","Pengurang pendapatan","Modal kerja"],a:1,e:"Manfaat lebih dari 1 tahun → dikapitalisasi sebagai aset lalu disusutkan. Langsung dibebankan membuat laba tahun ini understated."},
  {t:"Financial Modeling",q:"Metode declining balance vs garis lurus (straight-line): beban depresiasi…",o:["Sama tiap tahun pada keduanya","Lebih besar di tahun-tahun awal pada declining balance","Lebih besar di tahun-tahun awal pada garis lurus","Nol di tahun pertama keduanya"],a:1,e:"Declining balance = tarif × nilai buku yang menyusut → beban besar di awal, kecil di akhir. Garis lurus rata tiap tahun."},
@@ -143,14 +143,14 @@ const Q = [
  {t:"Financial Modeling",q:"Konvensi 'mid-year' dalam DCF mengasumsikan…",o:["Arus kas diterima di akhir tahun","Arus kas diterima merata — didiskon setengah periode lebih awal","Diskon dihitung tengah malam","Tahun fiskal dimulai Juli"],a:1,e:"Arus kas tidak menunggu 31 Desember — mid-year mendiskon tiap tahun setengah periode lebih awal sehingga valuasi sedikit lebih tinggi."},
  {t:"Financial Modeling",q:"Laba ditahan awal Rp200 jt, laba bersih Rp60 jt, dividen Rp20 jt. Laba ditahan akhir?",o:["Rp240 jt","Rp220 jt","Rp260 jt","Rp180 jt"],a:0,e:"200 + 60 − 20 = 240. Link wajib 3-statement: laba bersih masuk ke ekuitas melalui laba ditahan."},
 // ===== VALUATION (+8 → total 14) =====
- {t:"Valuation",q:"FCF Rp100 M tumbuh 10%/tahun selama 3 tahun, lalu 3% selamanya. WACC 12%. Enterprise value?",o:["Rp1.374 M","Rp1.342 M","Rp1.523 M","Rp1.813 M"],a:0,e:"PV FCF tahun 1–3: 98,2 + 96,5 + 94,7. TV = 133,1×1,03/0,09 = 1.523 → PV-nya 1.084. Total ≈ Rp1.374 M."},
+ {t:"Valuation",q:"FCF Rp100 M tumbuh 10%/tahun selama 3 tahun, lalu 3% selamanya. WACC 12%. Enterprise value?",o:["Rp1.374 M","Rp1.342 M","Rp1.523 M","Rp1.813 M"],a:0,e:"PV FCF tahun 1–3: 98,2143 + 96,4605 + 94,7380. TV = 133,1×1,03/0,09 = 1.523,2556 → PV-nya 1.084,2232. Total = 1.373,6359 ≈ Rp1.374 M. (Total dihitung dari nilai presisi penuh; penjumlahan komponen yang sudah dibulatkan ke 4 desimal memberi 1.373,6360 — selisih 0,0001 murni pembulatan.)"},
  {t:"Valuation",q:"Ekuitas Rp600 M (Ke 14%), utang Rp400 M (Kd 8%, pajak 25%). WACC?",o:["10,8%","11,6%","10,0%","12,2%"],a:0,e:"0,6×14% + 0,4×8%×(1−0,25) = 8,4 + 2,4 = 10,8%. Biaya utang dihitung setelah pajak."},
  {t:"Valuation",q:"Utang berbunga Rp500 M, kas Rp120 M. Net debt?",o:["Rp380 M","Rp500 M","Rp620 M","Rp120 M"],a:0,e:"Net debt = utang − kas = 380. EV dikurangi net debt menjadi equity value."},
  {t:"Valuation",q:"EV Rp2.000 M, net debt Rp380 M. Equity value?",o:["Rp1.620 M","Rp2.380 M","Rp2.000 M","Rp1.880 M"],a:0,e:"Equity value = EV − net debt = 1.620. Jembatan standar dari enterprise value ke equity value."},
  {t:"Valuation",q:"Median EV/EBITDA perusahaan pembanding 7,5×; EBITDA target Rp300 M. Implied EV?",o:["Rp2.250 M","Rp40 M","Rp307,5 M","Rp292,5 M"],a:0,e:"7,5 × 300 = 2.250. Pilih pembanding yang benar-benar sepadan — multiple tanpa konteks menyesatkan."},
  {t:"Valuation",q:"Precedent transactions biasanya menghasilkan multiple lebih tinggi dari trading comps karena…",o:["Datanya lebih baru","Mencakup premium pengendalian (control premium) akuisisi","Perusahaannya lebih besar","Metodenya berbeda"],a:1,e:"Harga akuisisi = harga saham + premium kendali (umumnya 20–40%). Trading comps = harga minoritas tanpa premium."},
  {t:"Valuation",q:"Pada DCF tipikal, komponen yang sering menyumbang >60% dari enterprise value adalah…",o:["FCF tahun 1","Terminal value","Modal kerja","Capex tahun 1"],a:1,e:"Terminal value mendominasi karena mencakup 'selamanya'. Makanya asumsi g dan WACC jauh lebih menentukan daripada detail tahun 1–5."},
- {t:"Valuation",q:"FCFF Rp100 M, beban bunga Rp20 M, pajak 25%, net borrowing Rp10 M. FCFE?",o:["Rp95 M","Rp90 M","Rp110 M","Rp85 M"],a:0,e:"FCFE = 100 − 20×0,75 + 10 = 95. FCFF milik semua investor; FCFE hanya milik pemegang saham."},
+ {t:"Valuation",q:"FCFF Rp100 M, beban bunga Rp20 M, pajak 25%, net borrowing Rp10 M — dengan asumsi seluruh bunga mendapat manfaat pajak dan tidak ada penyesuaian pendanaan lain. FCFE?",o:["Rp95 M","Rp90 M","Rp110 M","Rp85 M"],a:0,e:"FCFE = 100 − 20×0,75 + 10 = 95. FCFF milik semua investor; FCFE hanya milik pemegang saham. (Asumsi soal: seluruh beban bunga Rp20 M dapat dikurangkan dari pajak, dan tidak ada arus pendanaan lain selain net borrowing Rp10 M.)"},
 // ===== FINANCE (+3 → total 5) =====
  {t:"Finance",q:"Risiko yang BISA dihilangkan dengan diversifikasi portofolio?",o:["Risiko pasar (systematic)","Risiko spesifik perusahaan (unsystematic)","Risiko suku bunga","Risiko inflasi"],a:1,e:"Risiko idiosinkratik (manajemen, produk) terdiversifikasi habis. Risiko sistematis tetap — itu yang dihargai pasar."},
  {t:"Finance",q:"Proyek yang risikonya JAUH di atas rata-rata perusahaan sebaiknya didiskon dengan…",o:["WACC perusahaan","Tingkat diskonto yang disesuaikan risiko (lebih tinggi)","Risk-free rate","Cost of debt"],a:1,e:"WACC = rata-rata perusahaan. Proyek lebih berisiko butuh hurdle lebih tinggi, atau NPV-nya terlihat bagus padahal tidak."},
@@ -359,6 +359,39 @@ function startExam(){
   renderQ();
 }
 // ===== STUDI KASUS EXCEL =====
+// ===== PANEL CHECKER (dipakai caseBrief + showChecker) =====
+// Panel ini satu-satunya definisi markup checker: caseBrief() menampilkannya di
+// brief, showChecker() menampilkannya dari layar soal/hasil/pembahasan — tanpa
+// refresh, jadi timer + jawaban (state in-memory) tetap utuh. checkCaseFile()
+// membaca #casefile/#casecheck dari DOM saat itu; hanya satu panel yang pernah
+// ada di DOM dalam satu waktu, jadi ID tidak pernah ganda.
+// Ronde 5 S-1: dulu panel hanya ada di caseBrief(); begitu beginCase() memanggil
+// renderQ(), panel hilang dan refresh satu-satunya jalan kembali (menghancurkan
+// sesi). Sekarang panel bisa dibuka kapan saja selama/sesudah case.
+let checkerReturn = null, lastResultHTML = "", lastReviewHTML = "";
+function checkerPanelHTML(){
+  return `<div class="card" style="box-shadow:none;margin:12px 0">
+      <h3>🔍 Verifikasi modelmu (opsional)</h3>
+      <p class="small">Upload file MODEL yang sudah kamu isi — checker memverifikasi nilai dan rumus 12 sel kunci di sheet MODEL (kolom B = 2026, C = 2027, D = 2028; EV dan Nilai per saham dicari di kolom B–D pada baris labelnya): Pendapatan 2026 (151.800), EBIT 2026 (22.860), Laba bersih 2026 (16.270,8), NWC 2028 (33.062,04), CFO 2026 (21.286,8), Kas akhir 2028 (52.261,41), FCFF 2027 (15.576,48), Cek A−L−E 2026/2027/2028 (0), Enterprise value (DCF) (192.388,65), Nilai per saham (3.547,77 Rp/saham) — semua dalam Rp juta kecuali Nilai per saham.</p>
+      <p class="small">Toleransi: nilai Rp-juta lolos bila selisih ≤ maks(Rp11 jt; 0,05% nilai acuan); Cek A−L−E lolos bila selisih ≤ Rp1 jt; Nilai per saham lolos bila selisih ≤ Rp11/saham. Tiap sel kunci lolos hanya bila nilainya benar DAN ada rumus (ketikan angka benar tetap ❌ "KETIKAN"). Sel yang rumusnya ada tapi nilai tersimpannya tidak ada tampil ❌ "rumus ada, tapi nilai tersimpan tidak ada" — recalculate &amp; save dulu, lalu upload lagi. Catatan batas: lolos 12 sel kunci BUKAN audit model — checker tidak memeriksa sel lain, asumsi, atau kerapian modelmu.</p>
+      <p class="small">⚠️ Pastikan workbook sudah di-recalculate dan di-save sebelum upload — checker membaca nilai tersimpan dari file, bukan menghitung ulang rumus. Di Excel/Sheets: tekan recalculate lalu Save/Download. · <span lang="en">Make sure the workbook has been recalculated and saved before uploading — the checker reads saved values from the file, it does not recalculate formulas. In Excel/Sheets: recalculate, then Save/Download.</span></p>
+      <input type="file" id="casefile" accept=".xlsx,.xlsm" style="margin:8px 0">
+      <button class="btn" onclick="checkCaseFile()">Periksa Workbook</button>
+      <div id="casecheck" class="small" style="margin-top:8px"></div>
+    </div>`;
+}
+function showChecker(from){
+  checkerReturn = from;
+  const backLabel = from==='case' ? "← Kembali ke soal (timer tetap berjalan)" : from==='review' ? "← Kembali ke pembahasan" : "← Kembali ke hasil";
+  const note = from==='case' ? `<p class="small">⚠️ Timer 90 menit tetap berjalan selama kamu di panel ini — jawabanmu tersimpan, kembali kapan saja lewat tombol di bawah.</p>` : "";
+  app.innerHTML = `<div class="card"><h2>Verifikasi modelmu</h2>${note}${checkerPanelHTML()}<button class="btn" onclick="checkerBack()">${backLabel}</button></div>`;
+  window.scrollTo(0,0);
+}
+function checkerBack(){
+  if(checkerReturn==='case'){ renderQ(); }
+  else if(checkerReturn==='review'){ app.innerHTML = lastReviewHTML; window.scrollTo(0,0); }
+  else { app.innerHTML = lastResultHTML; window.scrollTo(0,0); }
+}
 function caseBrief(){
   app.innerHTML = `<div class="card">
     <span class="tag">Studi Kasus Excel 1 · 90 menit</span>
@@ -369,18 +402,10 @@ function caseBrief(){
       <li><strong>Klik tombol "Mulai Timer 90 Menit" di bawah dulu</strong> — timer 90 menit mencakup membangun model + menjawab <strong>10 soal</strong> dari modelmu sendiri, jadi jangan bangun model sebelum timer jalan.</li>
       <li>Bangun model di <strong>Google Sheets</strong>: Income Statement → NWC schedule → Balance Sheet → Cash Flow → FCFF &amp; DCF. Isi sel <strong>biru</strong> dengan rumus.</li>
       <li>Jawab <strong>10 soal</strong> dari modelmu sendiri sebelum timer habis.</li>
-      <li>Opsional: <strong>upload workbook</strong>-mu — checker memverifikasi 12 sel kunci langsung dari file (lihat panel "Verifikasi modelmu" di bawah).</li>
+      <li>Opsional: <strong>upload workbook</strong>-mu — checker memverifikasi 12 sel kunci langsung dari file (lihat panel "Verifikasi modelmu" di bawah). Panel yang sama juga bisa dibuka selama mengerjakan soal (tombol "🔍 Verifikasi modelmu" di layar soal / Peta Soal) dan sesudah selesai (dari layar hasil / pembahasan) — tanpa refresh, timer dan jawabanmu tetap tersimpan.</li>
     </ol>
     <p><a class="btn" href="https://drive.google.com/uc?export=download&id=${CASE_FILE_ID}" target="_blank" rel="noopener">⬇ Unduh Workbook (xlsx)</a></p>
-    <div class="card" style="box-shadow:none;margin:12px 0">
-      <h3>🔍 Verifikasi modelmu (opsional)</h3>
-      <p class="small">Upload file MODEL yang sudah kamu isi — checker memverifikasi nilai dan rumus 12 sel kunci di sheet MODEL (kolom B = 2026, C = 2027, D = 2028; EV dan Nilai per saham dicari di kolom B–D pada baris labelnya): Pendapatan 2026 (151.800), EBIT 2026 (22.860), Laba bersih 2026 (16.270,8), NWC 2028 (33.062,04), CFO 2026 (21.286,8), Kas akhir 2028 (52.261,41), FCFF 2027 (15.576,48), Cek A−L−E 2026/2027/2028 (0), Enterprise value (DCF) (192.388,65), Nilai per saham (3.547,77 Rp/saham) — semua dalam Rp juta kecuali Nilai per saham.</p>
-      <p class="small">Toleransi: nilai Rp-juta lolos bila selisih ≤ maks(Rp11 jt; 0,05% nilai acuan); Cek A−L−E lolos bila selisih ≤ Rp1 jt; Nilai per saham lolos bila selisih ≤ Rp11/saham. Tiap sel kunci lolos hanya bila nilainya benar DAN ada rumus (ketikan angka benar tetap ❌ "KETIKAN"). Sel yang rumusnya ada tapi nilai tersimpannya tidak ada tampil ❌ "rumus ada, tapi nilai tersimpan tidak ada" — recalculate &amp; save dulu, lalu upload lagi. Catatan batas: lolos 12 sel kunci BUKAN audit model — checker tidak memeriksa sel lain, asumsi, atau kerapian modelmu.</p>
-      <p class="small">⚠️ Pastikan workbook sudah di-recalculate dan di-save sebelum upload — checker membaca nilai tersimpan dari file, bukan menghitung ulang rumus. Di Excel/Sheets: tekan recalculate lalu Save/Download. · <span lang="en">Make sure the workbook has been recalculated and saved before uploading — the checker reads saved values from the file, it does not recalculate formulas. In Excel/Sheets: recalculate, then Save/Download.</span></p>
-      <input type="file" id="casefile" accept=".xlsx,.xlsm" style="margin:8px 0">
-      <button class="btn" onclick="checkCaseFile()">Periksa Workbook</button>
-      <div id="casecheck" class="small" style="margin-top:8px"></div>
-    </div>
+    ${checkerPanelHTML()}
     <button class="btn acc" onclick="beginCase()">Mulai Timer 90 Menit</button>
     <button class="btn ghost" onclick="startScreen()">← Kembali</button>
   </div>`;
@@ -566,6 +591,7 @@ function renderQ(){
     <button class="btn" onclick="go(1)" ${cur===QS.length-1?'disabled':''}>Lanjut →</button>
   </div>
   <button class="btn ghost" onclick="overview()">Peta Soal</button>
+  ${QS_MODE==='case'?'<button class="btn ghost" onclick="showChecker(\'case\')">🔍 Verifikasi modelmu</button>':''}
   <button class="btn acc" onclick="submit(false)">Selesai &amp; Nilai</button></div>`;
   app.innerHTML = h;
   window.scrollTo(0,0);
@@ -579,6 +605,7 @@ function overview(){
     h += `<div class="cell ${i===cur?'cur':''} ${ans[qi]!==undefined?'done':''} ${flagged.has(qi)?'flagged':''}" onclick="cur=${i};renderQ()">${i+1}</div>`;
   });
   h += `</div><button class="btn" onclick="renderQ()">Kembali</button>
+  ${QS_MODE==='case'?'<button class="btn ghost" onclick="showChecker(\'case\')">🔍 Verifikasi modelmu</button>':''}
   <button class="btn acc" onclick="submit(false)">Selesai &amp; Nilai</button></div>`;
   app.innerHTML = h;
 }
@@ -624,7 +651,9 @@ function submit(auto, timedOut){
   });
   h += `</table>${anyWeak?'<p class="small">Fokuskan belajar berikutnya ke topik bertanda ⚠️.</p>':''}
     <button class="btn" onclick="review()">Lihat Pembahasan</button>
-    <button class="btn acc" onclick="startExam()">Ulangi (soal diacak)</button></div>`;
+    ${QS_MODE==='case'?'<button class="btn ghost" onclick="showChecker(\'result\')">🔍 Verifikasi modelmu</button>':''}
+    ${QS_MODE==='case'?'<button class="btn acc" onclick="beginCase()">Ulangi Studi Kasus</button>':'<button class="btn acc" onclick="startExam()">Ulangi (soal diacak)</button>'}</div>`;
+  lastResultHTML = h;
   app.innerHTML=h; window.scrollTo(0,0);
 }
 function review(){
@@ -640,7 +669,9 @@ function review(){
     });
     h += `<div class="exp"><strong>Pembahasan:</strong> ${q.e}</div><hr style="border:0;border-top:1px solid var(--line)">`;
   });
-  h += `<button class="btn acc" onclick="startExam()">Ulangi Ujian</button></div>`;
+  h += `${QS_MODE==='case'?'<button class="btn ghost" onclick="showChecker(\'review\')">🔍 Verifikasi modelmu</button>':''}
+  ${QS_MODE==='case'?'<button class="btn acc" onclick="beginCase()">Ulangi Studi Kasus</button>':'<button class="btn acc" onclick="startExam()">Ulangi Ujian</button>'}</div>`;
+  lastReviewHTML = h;
   app.innerHTML=h; window.scrollTo(0,0);
 }
 startScreen();
